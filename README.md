@@ -1,59 +1,33 @@
-# AngularPrimengDemo
+# Angular PrimeNG Demo
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.4.
+Proyecto de demostración desarrollado con **Angular** y **PrimeNG**, como parte de la materia  
+**Seguridad en el Desarrollo de Aplicaciones**.
 
-## Development server
+El objetivo del proyecto es mostrar la integración de componentes PrimeNG dentro de una aplicación Angular moderna, siguiendo buenas prácticas de estructura y configuración.
 
-To start a local development server, run:
+---
 
-```bash
-ng serve
-```
+## 🚀 Tecnologías utilizadas
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Angular
+- PrimeNG
+- TypeScript
+- HTML5
+- CSS3
+- Node.js
+- Git & GitHub
 
-## Code scaffolding
+---
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## 📂 Estructura del proyecto
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+```text
+angular-primeng-demo/
+├── src/
+│   ├── app/
+│   ├── styles.css
+│   └── main.ts
+├── angular.json
+├── package.json
+├── tsconfig.json
+└── README.md
