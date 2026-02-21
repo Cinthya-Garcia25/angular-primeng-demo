@@ -1,0 +1,8 @@
+.description {
+  margin-top: 0;
+  text-align: center;
+}
+
+:host ::ng-deep .landing-card .p-card-title {
+  text-align: center;
+}

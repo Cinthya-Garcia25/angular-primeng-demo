@@ -1,0 +1,14 @@
+<main class="app-shell">
+  <header class="topbar">
+    <h1>PrimeNG</h1>
+    <nav class="links">
+      <a pButton label="Landing" [routerLink]="['/pages/landing']" routerLinkActive="p-button-info"></a>
+      <a pButton label="Iniciar sesion" severity="secondary" [routerLink]="['/pages/auth/login']"></a>
+      <a pButton label="Registrarse" severity="contrast" [routerLink]="['/pages/auth/register']"></a>
+    </nav>
+  </header>
+
+  <section class="page-content">
+    <router-outlet />
+  </section>
+</main>

@@ -1,0 +1,39 @@
+<section class="auth-form-wrapper">
+  <p-card styleClass="auth-card">
+    <ng-template #title>Registro</ng-template>
+    <p class="subtitle">Crea tu cuenta para ingresar al sistema.</p>
+
+    <div class="form-grid">
+      <label for="fullName">Nombre completo</label>
+      <input
+        pInputText
+        id="fullName"
+        type="text"
+        placeholder="Tu nombre"
+        autocomplete="name"
+      />
+
+      <label for="email">Correo</label>
+      <input
+        pInputText
+        id="email"
+        type="email"
+        placeholder="correo@ejemplo.com"
+        autocomplete="email"
+      />
+
+      <label for="password">Contrasena</label>
+      <p-password
+        inputId="password"
+        [feedback]="false"
+        [toggleMask]="true"
+        placeholder="********"
+      />
+    </div>
+
+    <div class="actions">
+      <a pButton label="Registrarme" icon="pi pi-user-plus" [routerLink]="['/pages/landing']"></a>
+      <a pButton label="Ya tengo cuenta" severity="secondary" [routerLink]="['/pages/auth/login']"></a>
+    </div>
+  </p-card>
+</section>
