@@ -6,3 +6,10 @@
 :host ::ng-deep .landing-card .p-card-title {
   text-align: center;
 }
+
+.landing-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}

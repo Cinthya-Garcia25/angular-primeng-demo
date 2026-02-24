@@ -1,17 +1,16 @@
 <section class="auth-form-wrapper">
+  <p-toast />
   <p-card styleClass="auth-card">
     <ng-template #title>Login</ng-template>
     <p class="subtitle">Accede con tus credenciales.</p>
+    <p class="subtitle">Usuarios de prueba: admin, juan, maria.</p>
 
-    <div class="form-grid">
-      <label for="email">Correo</label>
-      <input
-        pInputText
-        id="email"
-        type="email"
-        placeholder="correo@ejemplo.com"
-        autocomplete="email"
-      />
+    <form [formGroup]="loginForm" (ngSubmit)="submitLogin()" class="form-grid">
+      <label for="username">Usuario</label>
+      <input pInputText id="username" type="text" placeholder="Tu usuario" formControlName="username" />
+      @if (controlHasError('username')) {
+        <p-message severity="error" text="El usuario es obligatorio." />
+      }
 
       <label for="password">Contrasena</label>
       <p-password
@@ -19,18 +18,22 @@
         [feedback]="false"
         [toggleMask]="true"
         placeholder="********"
+        formControlName="password"
       />
-    </div>
+      @if (controlHasError('password')) {
+        <p-message severity="error" text="La contrasena es obligatoria." />
+      }
 
-    <div class="actions">
-      <a pButton label="Entrar" icon="pi pi-check" [routerLink]="['/pages/landing']"></a>
-      <a
-        pButton
-        label="Crear cuenta"
-        icon="pi pi-user-plus"
-        severity="secondary"
-        [routerLink]="['/pages/auth/register']"
-      ></a>
-    </div>
+      <div class="actions">
+        <button pButton type="submit" label="Entrar" icon="pi pi-check"></button>
+        <a
+          pButton
+          label="Crear cuenta"
+          icon="pi pi-user-plus"
+          severity="secondary"
+          [routerLink]="['/pages/auth/register']"
+        ></a>
+      </div>
+    </form>
   </p-card>
 </section>

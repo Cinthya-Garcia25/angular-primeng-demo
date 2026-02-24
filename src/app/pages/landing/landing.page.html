@@ -3,6 +3,17 @@
 
   <p class="description">
     Gestiona tus proyectos y accede a herramientas exclusivas.<br />
-    Inicia sesión para continuar o explora tu panel de control.
+    Inicia sesion para continuar o crea una cuenta nueva.
   </p>
+
+  <div class="landing-actions">
+    <a pButton label="Iniciar sesion" icon="pi pi-sign-in" [routerLink]="['/pages/auth/login']"></a>
+    <a
+      pButton
+      label="Registrarme"
+      icon="pi pi-user-plus"
+      severity="secondary"
+      [routerLink]="['/pages/auth/register']"
+    ></a>
+  </div>
 </p-card>

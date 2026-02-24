@@ -1,26 +1,41 @@
 <section class="auth-form-wrapper">
+  <p-toast />
   <p-card styleClass="auth-card">
     <ng-template #title>Registro</ng-template>
     <p class="subtitle">Crea tu cuenta para ingresar al sistema.</p>
 
-    <div class="form-grid">
-      <label for="fullName">Nombre completo</label>
-      <input
-        pInputText
-        id="fullName"
-        type="text"
-        placeholder="Tu nombre"
-        autocomplete="name"
-      />
+    <form [formGroup]="registerForm" (ngSubmit)="submitRegister()" class="form-grid">
+      <label for="username">Usuario</label>
+      <input pInputText id="username" type="text" placeholder="usuario123" formControlName="username" />
+      @if (controlHasError('username')) {
+        <p-message severity="error" text="Usuario requerido (minimo 3 caracteres)." />
+      }
 
-      <label for="email">Correo</label>
+      <label for="name">Name</label>
+      <input pInputText id="name" type="text" placeholder="Nombre corto" formControlName="name" />
+      @if (controlHasError('name')) {
+        <p-message severity="error" text="Name requerido (minimo 3 caracteres)." />
+      }
+
+      <label for="email">Email</label>
+      <input pInputText id="email" type="email" placeholder="correo@ejemplo.com" formControlName="email" />
+      @if (controlHasError('email')) {
+        <p-message severity="error" text="Email requerido y valido." />
+      }
+
+      <label for="phone">Telefono (10 digitos)</label>
       <input
         pInputText
-        id="email"
-        type="email"
-        placeholder="correo@ejemplo.com"
-        autocomplete="email"
+        id="phone"
+        type="text"
+        pKeyFilter="int"
+        maxlength="10"
+        placeholder="Solo numeros"
+        formControlName="phone"
       />
+      @if (controlHasError('phone')) {
+        <p-message severity="error" text="Telefono valido: solo numeros y 10 digitos." />
+      }
 
       <label for="password">Contrasena</label>
       <p-password
@@ -28,12 +43,63 @@
         [feedback]="false"
         [toggleMask]="true"
         placeholder="********"
+        formControlName="password"
       />
-    </div>
+      @if (controlHasError('password')) {
+        <p-message severity="error" text="Minimo 10 caracteres y 1 simbolo especial." />
+      }
 
-    <div class="actions">
-      <a pButton label="Registrarme" icon="pi pi-user-plus" [routerLink]="['/pages/landing']"></a>
-      <a pButton label="Ya tengo cuenta" severity="secondary" [routerLink]="['/pages/auth/login']"></a>
-    </div>
+      <label for="confirmPassword">Confirmar contrasena</label>
+      <p-password
+        inputId="confirmPassword"
+        [feedback]="false"
+        [toggleMask]="true"
+        placeholder="********"
+        formControlName="confirmPassword"
+      />
+      @if (controlHasError('confirmPassword')) {
+        <p-message severity="error" text="Debes confirmar la contrasena." />
+      }
+      @if (hasPasswordMismatch) {
+        <p-message severity="error" text="La confirmacion no coincide con la contrasena." />
+      }
+
+      <label for="fullName">Nombre completo</label>
+      <input pInputText id="fullName" type="text" placeholder="Tu nombre completo" formControlName="fullName" />
+      @if (controlHasError('fullName')) {
+        <p-message severity="error" text="Nombre completo requerido (minimo 5 caracteres)." />
+      }
+
+      <label for="address">Direccion</label>
+      <input pInputText id="address" type="text" placeholder="Tu direccion" formControlName="address" />
+      @if (controlHasError('address')) {
+        <p-message severity="error" text="Direccion requerida (minimo 10 caracteres)." />
+      }
+
+      <p-checkbox
+        inputId="isAdult"
+        formControlName="isAdult"
+        [binary]="true"
+        label="Confirmo que soy mayor de edad y asumo esta responsabilidad."
+      />
+      <p-message
+        severity="info"
+        text="Marca esta casilla para confirmar que eres mayor de edad y aceptas la responsabilidad."
+      />
+      @if (controlHasError('isAdult')) {
+        <p-message severity="error" text="Debes confirmar mayoria de edad para registrarte." />
+      }
+
+      <div class="actions">
+        <button
+          pButton
+          type="submit"
+          label="Registrarme"
+          icon="pi pi-user-plus"
+          [disabled]="registerForm.invalid"
+        ></button>
+        <a pButton label="Ya tengo cuenta" severity="secondary" [routerLink]="['/pages/auth/login']"></a>
+      </div>
+    </form>
   </p-card>
 </section>
