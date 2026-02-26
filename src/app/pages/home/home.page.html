@@ -1,0 +1,58 @@
+<section class="home-wrapper">
+  @if (!isLoggedIn) {
+    <p-card>
+      <ng-template #title>Bienvenido</ng-template>
+      <p class="description">Selecciona una opcion para continuar.</p>
+    </p-card>
+
+    <section class="auth-cards-grid">
+      <p-card>
+        <ng-template #title>Iniciar sesion</ng-template>
+        <p>Accede con tus credenciales para entrar al sistema.</p>
+        <a pButton [routerLink]="['/pages/auth/login']" icon="pi pi-sign-in" label="Ir a login"></a>
+      </p-card>
+
+      <p-card>
+        <ng-template #title>Registrarse</ng-template>
+        <p>Crea una cuenta nueva para comenzar a usar la plataforma.</p>
+        <a
+          pButton
+          [routerLink]="['/pages/auth/register']"
+          severity="secondary"
+          icon="pi pi-user-plus"
+          label="Crear cuenta"
+        ></a>
+      </p-card>
+    </section>
+  } @else {
+    <p-card styleClass="welcome-card">
+      <ng-template #title>Bienvenido al Home</ng-template>
+      <p class="description">Usa el menu lateral y el menu rapido para navegar entre modulos.</p>
+
+      <div class="search-box">
+        <i class="pi pi-search"></i>
+        <input pInputText type="text" placeholder="Buscar modulo..." [(ngModel)]="search" />
+      </div>
+    </p-card>
+
+    <p-card styleClass="menu-card">
+      <ng-template #title>Menu rapido</ng-template>
+      <p-menu [model]="quickMenuItems"></p-menu>
+    </p-card>
+
+    <section class="cards-grid">
+      @for (card of filteredCards; track card.title) {
+        <p-card>
+          <ng-template #title>
+            <div class="card-title">
+              <i [class]="card.icon"></i>
+              <span>{{ card.title }}</span>
+            </div>
+          </ng-template>
+          <p>{{ card.description }}</p>
+          <button pButton type="button" label="Abrir modulo" icon="pi pi-arrow-right"></button>
+        </p-card>
+      }
+    </section>
+  }
+</section>

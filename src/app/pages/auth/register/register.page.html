@@ -11,12 +11,6 @@
         <p-message severity="error" text="Usuario requerido (minimo 3 caracteres)." />
       }
 
-      <label for="name">Name</label>
-      <input pInputText id="name" type="text" placeholder="Nombre corto" formControlName="name" />
-      @if (controlHasError('name')) {
-        <p-message severity="error" text="Name requerido (minimo 3 caracteres)." />
-      }
-
       <label for="email">Email</label>
       <input pInputText id="email" type="email" placeholder="correo@ejemplo.com" formControlName="email" />
       @if (controlHasError('email')) {

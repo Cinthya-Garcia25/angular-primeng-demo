@@ -18,11 +18,18 @@ import { MessageModule } from 'primeng/message';
 import { PasswordModule } from 'primeng/password';
 import { ToastModule } from 'primeng/toast';
 
+interface RegisteredUser {
+  username: string;
+  email: string;
+  password: string;
+}
+
 const SPECIAL_CHARACTERS = '!@#$%^&*';
 const PASSWORD_PATTERN = new RegExp(
   `^(?=.*[${SPECIAL_CHARACTERS.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}]).{10,}$`
 );
 const PHONE_PATTERN = /^\d{10}$/;
+const REGISTERED_USERS_KEY = 'registeredUsers';
 
 function passwordsMatchValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -58,7 +65,6 @@ export class RegisterPageComponent {
   readonly registerForm = this.fb.group(
     {
       username: ['', [Validators.required, Validators.minLength(3)]],
-      name: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required, Validators.pattern(PHONE_PATTERN)]],
       password: ['', [Validators.required, Validators.pattern(PASSWORD_PATTERN)]],
@@ -82,6 +88,29 @@ export class RegisterPageComponent {
     );
   }
 
+  private getStoredUsers(): RegisteredUser[] {
+    const rawUsers = localStorage.getItem(REGISTERED_USERS_KEY);
+    if (!rawUsers) {
+      return [];
+    }
+
+    try {
+      const parsedUsers = JSON.parse(rawUsers);
+      if (!Array.isArray(parsedUsers)) {
+        return [];
+      }
+
+      return parsedUsers.filter(
+        (user): user is RegisteredUser =>
+          typeof user?.username === 'string' &&
+          typeof user?.email === 'string' &&
+          typeof user?.password === 'string'
+      );
+    } catch {
+      return [];
+    }
+  }
+
   submitRegister(): void {
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
@@ -92,6 +121,25 @@ export class RegisterPageComponent {
       });
       return;
     }
+
+    const username = this.registerForm.controls.username.value?.trim().toLowerCase() ?? '';
+    const email = this.registerForm.controls.email.value?.trim().toLowerCase() ?? '';
+    const password = this.registerForm.controls.password.value ?? '';
+
+    const storedUsers = this.getStoredUsers();
+    const existsUser = storedUsers.some((user) => user.username === username || user.email === email);
+
+    if (existsUser) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Usuario existente',
+        detail: 'El usuario o correo ya esta registrado.'
+      });
+      return;
+    }
+
+    const nextUsers: RegisteredUser[] = [...storedUsers, { username, email, password }];
+    localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(nextUsers));
 
     this.messageService.add({
       severity: 'success',

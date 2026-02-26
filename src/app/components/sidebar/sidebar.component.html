@@ -1,0 +1,60 @@
+<aside class="sidebar" [class.collapsed]="collapsed">
+  <div class="sidebar-brand">
+    <i class="pi pi-th-large"></i>
+    @if (!collapsed) {
+      <span>Workspace</span>
+    }
+  </div>
+
+  <nav class="sidebar-nav">
+    <a
+      pButton
+      class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/home']"
+      routerLinkActive="active-link"
+    >
+      <i class="pi pi-home"></i>
+      @if (!collapsed) {
+        <span>Home</span>
+      }
+    </a>
+
+    <a
+      pButton
+      class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/auth/login']"
+      routerLinkActive="active-link"
+    >
+      <i class="pi pi-sign-in"></i>
+      @if (!collapsed) {
+        <span>Iniciar sesion</span>
+      }
+    </a>
+
+    <a
+      pButton
+      class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/auth/register']"
+      routerLinkActive="active-link"
+    >
+      <i class="pi pi-user-plus"></i>
+      @if (!collapsed) {
+        <span>Registro</span>
+      }
+    </a>
+
+    @if (isLoggedIn) {
+      <button
+        pButton
+        type="button"
+        class="p-button-text p-button-danger nav-item logout-item"
+        (click)="requestLogout()"
+      >
+        <i class="pi pi-sign-out"></i>
+        @if (!collapsed) {
+          <span>Cerrar sesion</span>
+        }
+      </button>
+    }
+  </nav>
+</aside>
