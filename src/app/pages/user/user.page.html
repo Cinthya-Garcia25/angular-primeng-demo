@@ -1,34 +1,20 @@
-<section class="auth-form-wrapper">
+<section class="user-wrapper">
   <p-toast />
-  <p-card styleClass="auth-card">
-    <ng-template #title>Registro</ng-template>
-    <p class="subtitle">Crea tu cuenta para ingresar al sistema.</p>
+  <p-card styleClass="user-card">
+    <ng-template #title>Perfil de usuario</ng-template>
+    <p class="subtitle">Actualiza tu informacion con los mismos datos solicitados en el registro.</p>
 
-    <form [formGroup]="registerForm" (ngSubmit)="submitRegister()" class="form-grid">
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="form-grid">
       <label for="username">Usuario</label>
-      <input
-        pInputText
-        id="username"
-        type="text"
-        placeholder="usuario123"
-        formControlName="username"
-        (keydown.space)="$event.preventDefault()"
-      />
+      <input pInputText id="username" type="text" placeholder="usuario123" formControlName="username" />
       @if (controlHasError('username')) {
-        <p-message severity="error" text="Usuario requerido (minimo 3 caracteres y sin espacios)." />
+        <p-message severity="error" text="Usuario requerido (minimo 3 caracteres)." />
       }
 
       <label for="email">Email</label>
-      <input
-        pInputText
-        id="email"
-        type="email"
-        placeholder="correo@ejemplo.com"
-        formControlName="email"
-        (keydown.space)="$event.preventDefault()"
-      />
+      <input pInputText id="email" type="email" placeholder="correo@ejemplo.com" formControlName="email" />
       @if (controlHasError('email')) {
-        <p-message severity="error" text="Email requerido, valido y sin espacios." />
+        <p-message severity="error" text="Email requerido y valido." />
       }
 
       <label for="phone">Telefono (10 digitos)</label>
@@ -90,23 +76,12 @@
         [binary]="true"
         label="Confirmo que soy mayor de edad y asumo esta responsabilidad."
       />
-      <p-message
-        severity="info"
-        text="Marca esta casilla para confirmar que eres mayor de edad y aceptas la responsabilidad."
-      />
       @if (controlHasError('isAdult')) {
-        <p-message severity="error" text="Debes confirmar mayoria de edad para registrarte." />
+        <p-message severity="error" text="Debes confirmar mayoria de edad para guardar tu perfil." />
       }
 
       <div class="actions">
-        <button
-          pButton
-          type="submit"
-          label="Registrarme"
-          icon="pi pi-user-plus"
-          [disabled]="registerForm.invalid"
-        ></button>
-        <a pButton label="Ya tengo cuenta" severity="secondary" [routerLink]="['/pages/auth/login']"></a>
+        <button pButton type="submit" label="Guardar perfil" icon="pi pi-save" [disabled]="profileForm.invalid"></button>
       </div>
     </form>
   </p-card>

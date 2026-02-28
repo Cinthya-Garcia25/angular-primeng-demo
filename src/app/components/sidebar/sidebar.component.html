@@ -22,12 +22,48 @@
     <a
       pButton
       class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/user']"
+      routerLinkActive="active-link"
+    >
+      <i class="pi pi-user"></i>
+      @if (!collapsed) {
+        <span>User</span>
+      }
+    </a>
+
+    <a
+      pButton
+      class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/groups']"
+      routerLinkActive="active-link"
+    >
+      <i class="pi pi-users"></i>
+      @if (!collapsed) {
+        <span>Groups</span>
+      }
+    </a>
+
+    <a
+      pButton
+      class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/landing']"
+      routerLinkActive="active-link"
+    >
+      <i class="pi pi-compass"></i>
+      @if (!collapsed) {
+        <span>Landing</span>
+      }
+    </a>
+
+    <a
+      pButton
+      class="p-button-text p-button-secondary nav-item"
       [routerLink]="['/pages/auth/login']"
       routerLinkActive="active-link"
     >
       <i class="pi pi-sign-in"></i>
       @if (!collapsed) {
-        <span>Iniciar sesion</span>
+        <span>Login</span>
       }
     </a>
 
@@ -39,7 +75,7 @@
     >
       <i class="pi pi-user-plus"></i>
       @if (!collapsed) {
-        <span>Registro</span>
+        <span>Register</span>
       }
     </a>
 
@@ -57,4 +93,8 @@
       </button>
     }
   </nav>
+
+  <div class="sidebar-version">
+    <span>{{ appVersion }}</span>
+  </div>
 </aside>

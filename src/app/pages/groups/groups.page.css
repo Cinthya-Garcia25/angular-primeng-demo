@@ -1,0 +1,65 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.groups-wrapper {
+  width: 100%;
+  min-height: calc(100vh - 11rem);
+}
+
+.title {
+  margin-top: 0;
+  margin-bottom: 0.8rem;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.section-label {
+  margin: 0 0 0.8rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+:host ::ng-deep .summary-card {
+  width: 100%;
+  min-height: calc(100vh - 11rem);
+}
+
+:host ::ng-deep .summary-card .p-card-body,
+:host ::ng-deep .summary-card .p-card-content {
+  height: 100%;
+}
+
+:host ::ng-deep .total-card {
+  width: min(100%, 10rem);
+  margin-bottom: 1.25rem;
+}
+
+:host ::ng-deep .total-card .p-card-body,
+:host ::ng-deep .total-card .p-card-content {
+  padding: 0.25rem 0.5rem;
+}
+
+.total-value {
+  margin: 0;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+:host ::ng-deep .advance-card {
+  width: min(100%, 36rem);
+  min-height: clamp(16rem, 46vh, 30rem);
+  border: 1px solid var(--p-surface-300);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  background: var(--p-surface-0);
+}
+
+:host ::ng-deep .advance-card .p-card-body {
+  min-height: clamp(16rem, 46vh, 30rem);
+}
+
+.empty-text {
+  margin: 0;
+}

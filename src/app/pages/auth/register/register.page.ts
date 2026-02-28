@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -7,6 +7,7 @@ import {
   ValidatorFn,
   Validators
 } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -29,6 +30,7 @@ const PASSWORD_PATTERN = new RegExp(
   `^(?=.*[${SPECIAL_CHARACTERS.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}]).{10,}$`
 );
 const PHONE_PATTERN = /^\d{10}$/;
+const NO_WHITESPACE_PATTERN = /^\S+$/;
 const REGISTERED_USERS_KEY = 'registeredUsers';
 
 function passwordsMatchValidator(): ValidatorFn {
@@ -61,11 +63,12 @@ export class RegisterPageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly registerForm = this.fb.group(
     {
-      username: ['', [Validators.required, Validators.minLength(3)]],
-      email: ['', [Validators.required, Validators.email]],
+      username: ['', [Validators.required, Validators.minLength(3), Validators.pattern(NO_WHITESPACE_PATTERN)]],
+      email: ['', [Validators.required, Validators.email, Validators.pattern(NO_WHITESPACE_PATTERN)]],
       phone: ['', [Validators.required, Validators.pattern(PHONE_PATTERN)]],
       password: ['', [Validators.required, Validators.pattern(PASSWORD_PATTERN)]],
       confirmPassword: ['', [Validators.required]],
@@ -75,6 +78,11 @@ export class RegisterPageComponent {
     },
     { validators: passwordsMatchValidator() }
   );
+
+  constructor() {
+    this.enforceNoWhitespace('username');
+    this.enforceNoWhitespace('email');
+  }
 
   controlHasError(controlName: keyof typeof this.registerForm.controls): boolean {
     const control = this.registerForm.controls[controlName];
@@ -86,6 +94,16 @@ export class RegisterPageComponent {
       this.registerForm.hasError('passwordMismatch') &&
       (this.registerForm.controls.confirmPassword.dirty || this.registerForm.controls.confirmPassword.touched)
     );
+  }
+
+  private enforceNoWhitespace(controlName: 'username' | 'email'): void {
+    const control = this.registerForm.controls[controlName];
+    control.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
+      const sanitizedValue = (value ?? '').replace(/\s+/g, '');
+      if (value !== sanitizedValue) {
+        control.setValue(sanitizedValue, { emitEvent: false });
+      }
+    });
   }
 
   private getStoredUsers(): RegisteredUser[] {

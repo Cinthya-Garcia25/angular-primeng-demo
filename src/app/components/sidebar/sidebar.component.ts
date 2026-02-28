@@ -13,6 +13,7 @@ export class SidebarComponent {
   @Output() logoutRequested = new EventEmitter<void>();
 
   readonly isLoggedIn = !!sessionStorage.getItem('authUser');
+  readonly appVersion = 'v1.0.0';
 
   requestLogout(): void {
     this.logoutRequested.emit();

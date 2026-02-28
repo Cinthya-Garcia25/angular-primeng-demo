@@ -40,7 +40,7 @@ export class LoginPageComponent implements OnInit {
   private readonly defaultCredentials: AuthCredential[] = [
     { username: 'admin', password: 'Admin@1234' },
     { username: 'ids15', password: 'Ids15@2026' },
-    { username: 'cinthya', password: 'Invitado#2026' }
+    { username: 'cinthya', password: 'Cinthya@2026' }
   ];
 
   readonly loginForm = this.fb.group({

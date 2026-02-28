@@ -3,6 +3,8 @@
 }
 
 .sidebar {
+  display: flex;
+  flex-direction: column;
   width: 250px;
   min-height: 100%;
   background: var(--p-surface-0);
@@ -26,9 +28,10 @@
 }
 
 .sidebar-nav {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0.4rem;
-  height: calc(100vh - 180px);
+  flex: 1;
 }
 
 .nav-item {
@@ -48,6 +51,15 @@
 
 .logout-item {
   margin-top: auto;
+}
+
+.sidebar-version {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--p-surface-200);
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
+  text-align: center;
 }
 
 @media (max-width: 900px) {
