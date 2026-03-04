@@ -23,6 +23,7 @@ interface RegisteredUser {
   username: string;
   email: string;
   password: string;
+  isActive?: boolean;
 }
 
 const SPECIAL_CHARACTERS = '!@#$%^&*';
@@ -122,7 +123,8 @@ export class RegisterPageComponent {
         (user): user is RegisteredUser =>
           typeof user?.username === 'string' &&
           typeof user?.email === 'string' &&
-          typeof user?.password === 'string'
+          typeof user?.password === 'string' &&
+          (typeof user?.isActive === 'boolean' || typeof user?.isActive === 'undefined')
       );
     } catch {
       return [];
@@ -156,7 +158,7 @@ export class RegisterPageComponent {
       return;
     }
 
-    const nextUsers: RegisteredUser[] = [...storedUsers, { username, email, password }];
+    const nextUsers: RegisteredUser[] = [...storedUsers, { username, email, password, isActive: true }];
     localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(nextUsers));
 
     this.messageService.add({

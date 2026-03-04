@@ -1,20 +1,63 @@
-<section class="user-wrapper">
+<section class="profile-wrapper">
   <p-toast />
-  <p-card styleClass="user-card">
-    <ng-template #title>Perfil de usuario</ng-template>
-    <p class="subtitle">Actualiza tu informacion con los mismos datos solicitados en el registro.</p>
+  <p-card styleClass="profile-card">
+    <div class="profile-header">
+      <i class="pi pi-user profile-icon"></i>
+      <ng-template #title>Mi Perfil</ng-template>
+      <p class="subtitle">Informacion de tu cuenta</p>
+      <span class="status-badge" [class.inactive]="!isAccountActive">
+        {{ isAccountActive ? 'Cuenta activa' : 'Cuenta desactivada' }}
+      </span>
+    </div>
+
+    <div class="actions top-actions">
+      @if (isAccountActive) {
+        <button
+          pButton
+          type="button"
+          label="Desactivar cuenta"
+          icon="pi pi-trash"
+          severity="danger"
+          outlined
+          (click)="openDeactivateDialog()"
+        ></button>
+      } @else {
+        <button
+          pButton
+          type="button"
+          label="Restaurar cuenta"
+          icon="pi pi-refresh"
+          severity="success"
+          (click)="activateAccount()"
+        ></button>
+      }
+    </div>
 
     <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="form-grid">
       <label for="username">Usuario</label>
-      <input pInputText id="username" type="text" placeholder="usuario123" formControlName="username" />
+      <input
+        pInputText
+        id="username"
+        type="text"
+        placeholder="usuario123"
+        formControlName="username"
+        (keydown.space)="$event.preventDefault()"
+      />
       @if (controlHasError('username')) {
-        <p-message severity="error" text="Usuario requerido (minimo 3 caracteres)." />
+        <p-message severity="error" text="Usuario requerido (minimo 3 caracteres y sin espacios)." />
       }
 
       <label for="email">Email</label>
-      <input pInputText id="email" type="email" placeholder="correo@ejemplo.com" formControlName="email" />
+      <input
+        pInputText
+        id="email"
+        type="email"
+        placeholder="correo@ejemplo.com"
+        formControlName="email"
+        (keydown.space)="$event.preventDefault()"
+      />
       @if (controlHasError('email')) {
-        <p-message severity="error" text="Email requerido y valido." />
+        <p-message severity="error" text="Email requerido, valido y sin espacios." />
       }
 
       <label for="phone">Telefono (10 digitos)</label>
@@ -81,8 +124,33 @@
       }
 
       <div class="actions">
-        <button pButton type="submit" label="Guardar perfil" icon="pi pi-save" [disabled]="profileForm.invalid"></button>
+        <button
+          pButton
+          type="submit"
+          label="Guardar perfil"
+          icon="pi pi-save"
+          [disabled]="profileForm.invalid || !isAccountActive"
+        ></button>
       </div>
     </form>
   </p-card>
 </section>
+
+<p-dialog
+  header="Confirmar Desactivacion"
+  [(visible)]="deactivateDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '34rem', maxWidth: '95vw' }"
+  (onHide)="closeDeactivateDialog()"
+>
+  <div class="delete-confirm-content">
+    <i class="pi pi-exclamation-triangle"></i>
+    <p>Estas seguro de que deseas desactivar tu cuenta? Esta accion marcara tu perfil como eliminado logico.</p>
+  </div>
+  <div class="actions">
+    <button pButton type="button" label="Cancelar" severity="secondary" (click)="closeDeactivateDialog()"></button>
+    <button pButton type="button" label="Desactivar" severity="danger" (click)="deactivateAccount()"></button>
+  </div>
+</p-dialog>

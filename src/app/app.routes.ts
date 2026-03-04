@@ -26,8 +26,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/home/home.page').then((m) => m.HomePageComponent)
       },
       {
+        path: 'profile',
+        loadComponent: () => import('./pages/profile/profile.page').then((m) => m.ProfilePageComponent)
+      },
+      {
         path: 'user',
-        loadComponent: () => import('./pages/user/user.page').then((m) => m.UserPageComponent)
+        redirectTo: 'profile'
       },
       {
         path: 'groups',

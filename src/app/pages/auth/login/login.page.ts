@@ -12,6 +12,7 @@ import { MessageService } from 'primeng/api';
 interface AuthCredential {
   username: string;
   password: string;
+  isActive?: boolean;
 }
 
 const REGISTERED_USERS_KEY = 'registeredUsers';
@@ -74,7 +75,9 @@ export class LoginPageComponent implements OnInit {
 
       return parsedUsers.filter(
         (user): user is AuthCredential =>
-          typeof user?.username === 'string' && typeof user?.password === 'string'
+          typeof user?.username === 'string' &&
+          typeof user?.password === 'string' &&
+          (typeof user?.isActive === 'boolean' || typeof user?.isActive === 'undefined')
       );
     } catch {
       return [];
@@ -98,6 +101,15 @@ export class LoginPageComponent implements OnInit {
     const credentialMatch = credentialPool.find(
       (credential) => credential.username === username && credential.password === password
     );
+
+    if (credentialMatch?.isActive === false) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Cuenta desactivada',
+        detail: 'Tu cuenta esta desactivada. Debes restaurarla para volver a ingresar.'
+      });
+      return;
+    }
 
     if (credentialMatch) {
       sessionStorage.setItem('authUser', credentialMatch.username);

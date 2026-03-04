@@ -1,0 +1,76 @@
+:host {
+  display: block;
+}
+
+.profile-wrapper {
+  width: min(100%, 32rem);
+  margin: 0 auto;
+}
+
+.profile-card {
+  width: 100%;
+}
+
+.subtitle {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.profile-icon {
+  font-size: 1.8rem;
+  color: var(--p-primary-color);
+  margin-bottom: 0.4rem;
+}
+
+.status-badge {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.5rem;
+  background: var(--p-green-100);
+  color: var(--p-green-700);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-badge.inactive {
+  background: var(--p-red-100);
+  color: var(--p-red-600);
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.top-actions {
+  margin-bottom: 1rem;
+}
+
+.delete-confirm-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.delete-confirm-content i {
+  color: var(--p-yellow-500);
+  font-size: 1.3rem;
+}
+
+.delete-confirm-content p {
+  margin: 0;
+}
