@@ -1,0 +1,83 @@
+<section class="group-settings-wrapper">
+  <p-toast></p-toast>
+  
+  <h2 class="title">Gestión del Grupo</h2>
+
+  <div class="settings-grid">
+
+    <p-card styleClass="settings-card">
+      <div class="card-header">
+        <i class="pi pi-cog"></i>
+        <h3>Configuración Básica</h3>
+      </div>
+      
+      <form [formGroup]="groupForm" (ngSubmit)="saveGroupSettings()" class="settings-form">
+        <div class="field">
+          <label for="name">Nombre del Grupo</label>
+          <input pInputText id="name" type="text" formControlName="name" />
+          @if (groupForm.controls.name.invalid && (groupForm.controls.name.dirty || groupForm.controls.name.touched)) {
+            <small class="p-error">El nombre es requerido (mínimo 3 caracteres).</small>
+          }
+        </div>
+        
+        <div class="actions">
+          <button *ifHasPermission="'group:edit'" pButton type="submit" label="Guardar Cambios" icon="pi pi-save"></button>
+        </div>
+      </form>
+    </p-card>
+
+    <!-- Gestión de Usuarios -->
+    <p-card styleClass="settings-card">
+      <div class="card-header">
+        <i class="pi pi-users"></i>
+        <h3>Usuarios del Grupo</h3>
+      </div>
+      
+      <div class="toolbar">
+        <button *ifHasPermission="'group:add'" pButton type="button" label="Añadir Usuario" icon="pi pi-user-plus" (click)="openAddUserDialog()"></button>
+      </div>
+
+      <p-table [value]="users" [paginator]="true" [rows]="5" responsiveLayout="scroll" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Email</th>
+            <th>Añadido el</th>
+            <th style="width: 5rem">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-user>
+          <tr>
+            <td>{{ user.email }}</td>
+            <td>{{ user.addedAt }}</td>
+            <td>
+              <button *ifHasPermission="'group:delete'" pButton type="button" icon="pi pi-trash" severity="danger" text (click)="removeUser(user)" [disabled]="user.email === 'admin@demo.com'"></button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="3" class="text-center">No hay usuarios en este grupo.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+  </div>
+</section>
+
+
+<p-dialog header="Añadir Usuario" [(visible)]="addUserDialogVisible" [modal]="true" [style]="{width: '30rem'}">
+  <form [formGroup]="addUserForm" (ngSubmit)="addUser()" class="add-user-form">
+    <div class="field">
+      <label for="email">Email del Usuario</label>
+      <input pInputText id="email" type="email" formControlName="email" placeholder="usuario@ejemplo.com" />
+      @if (addUserForm.controls.email.invalid && (addUserForm.controls.email.dirty || addUserForm.controls.email.touched)) {
+        <small class="p-error">Ingrese un email válido.</small>
+      }
+    </div>
+    
+    <div class="dialog-actions">
+      <button pButton type="button" label="Cancelar" severity="secondary" (click)="closeAddUserDialog()"></button>
+      <button pButton type="submit" label="Añadir" icon="pi pi-check" [disabled]="addUserForm.invalid"></button>
+    </div>
+  </form>
+</p-dialog>

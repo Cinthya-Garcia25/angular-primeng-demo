@@ -1,0 +1,124 @@
+<section class="user-management-wrapper">
+  <p-toast></p-toast>
+  
+  <div class="header-row">
+    <h2 class="title">Gestión de Usuarios y Permisos</h2>
+    <button *ifHasPermission="'user:add'" pButton icon="pi pi-user-plus" label="Nuevo Usuario" (click)="openCreateDialog()"></button>
+  </div>
+
+  <p-card styleClass="table-card">
+    <p-table [value]="users" [paginator]="true" [rows]="10" responsiveLayout="scroll">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Usuario</th>
+          <th>Email</th>
+          <th>Estado</th>
+          <th>Permisos Asignados</th>
+          <th style="width: 8rem">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-user>
+        <tr>
+          <td><strong>{{ user.username }}</strong></td>
+          <td>{{ user.email }}</td>
+          <td>
+            <span class="status-badge" [class.inactive]="!user.isActive">
+              {{ user.isActive ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td>
+            <div class="permissions-list">
+              @for (perm of user.permissions; track perm) {
+                <span class="perm-chip">{{ perm }}</span>
+              }
+              @if (!user.permissions?.length) {
+                <span class="text-muted">Sin permisos</span>
+              }
+            </div>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button *ifHasPermission="'user:edit'" pButton type="button" icon="pi pi-pencil" severity="secondary" text (click)="openEditDialog(user)" [disabled]="user.username === 'superadmin' && !isEditing"></button>
+              <button *ifHasPermission="'user:delete'" pButton type="button" icon="pi pi-trash" severity="danger" text (click)="deleteUser(user)" [disabled]="user.username === 'superadmin'"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center">No hay usuarios registrados en el sistema.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</section>
+
+<!-- Diálogo Crear/Editar Usuario -->
+<p-dialog [header]="isEditing ? 'Editar Usuario: ' + editingUsername : 'Crear Nuevo Usuario'" 
+          [(visible)]="userDialogVisible" 
+          [modal]="true" 
+          [style]="{width: '45rem', maxWidth: '95vw'}"
+          (onHide)="closeDialog()">
+          
+  <form [formGroup]="userForm" (ngSubmit)="saveUser()" class="user-form">
+    <div class="form-grid">
+      <!-- Columna Izquierda: Datos básicos -->
+      <div class="basic-info-col">
+        <h3 class="section-title">Datos Básicos</h3>
+        
+        <div class="field">
+          <label for="username">Nombre de usuario <span class="req">*</span></label>
+          <input pInputText id="username" formControlName="username" />
+          @if (userForm.controls.username.invalid && (userForm.controls.username.dirty || userForm.controls.username.touched)) {
+            <small class="p-error">Requerido (mín. 3 caracteres).</small>
+          }
+        </div>
+        
+        <div class="field">
+          <label for="email">Email <span class="req">*</span></label>
+          <input pInputText id="email" type="email" formControlName="email" />
+          @if (userForm.controls.email.invalid && (userForm.controls.email.dirty || userForm.controls.email.touched)) {
+            <small class="p-error">Email válido requerido.</small>
+          }
+        </div>
+        
+        <div class="field">
+          <label for="password">Contraseña @if(!isEditing) {<span class="req">*</span>}</label>
+          <p-password id="password" formControlName="password" [toggleMask]="true" [feedback]="false" [placeholder]="isEditing ? 'Dejar en blanco para no cambiar' : ''" styleClass="w-full" inputStyleClass="w-full"></p-password>
+          @if (userForm.controls.password.invalid && (userForm.controls.password.dirty || userForm.controls.password.touched)) {
+            <small class="p-error">Requerida (mín. 6 caracteres).</small>
+          }
+        </div>
+        
+        <div class="field-checkbox">
+          <p-checkbox inputId="isActive" formControlName="isActive" [binary]="true"></p-checkbox>
+          <label for="isActive">Usuario Activo</label>
+        </div>
+      </div>
+      
+      <!-- Columna Derecha: Permisos -->
+      <div class="permissions-col">
+        <h3 class="section-title">Permisos del Sistema</h3>
+        <div class="permissions-grid">
+          @for (perm of allPermissions; track perm) {
+            <div class="perm-item">
+              <p-checkbox 
+                [inputId]="'perm_' + perm" 
+                [binary]="true"
+                [ngModel]="hasPermissionSelected(perm)"
+                (ngModelChange)="togglePermission(perm)"
+                [ngModelOptions]="{standalone: true}">
+              </p-checkbox>
+              <label [for]="'perm_' + perm">{{ perm }}</label>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+    
+    <div class="dialog-actions">
+      <button pButton type="button" label="Cancelar" severity="secondary" (click)="closeDialog()"></button>
+      <button pButton type="submit" label="Guardar" icon="pi pi-check" [disabled]="userForm.invalid"></button>
+    </div>
+  </form>
+</p-dialog>

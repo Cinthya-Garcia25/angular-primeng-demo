@@ -1,0 +1,58 @@
+<div class="gs-page">
+
+  <!-- Fondo decorativo -->
+  <div class="gs-bg-deco gs-bg-deco-1"></div>
+  <div class="gs-bg-deco gs-bg-deco-2"></div>
+
+  <div class="gs-card">
+
+    <!-- Encabezado -->
+    <header class="gs-header">
+      <div class="gs-user-avatar">
+        <span>{{ username.charAt(0).toUpperCase() }}</span>
+      </div>
+      <h2 class="gs-title">Selecciona tu espacio</h2>
+      <p class="gs-subtitle">
+        Hola, <strong>{{ username }}</strong>. Elige el grupo al que deseas acceder hoy.
+      </p>
+    </header>
+
+    <!-- Lista de grupos -->
+    <div class="gs-groups" role="list">
+      @for (group of groups; track group.id) {
+        <button
+          type="button"
+          class="group-item"
+          role="listitem"
+          (click)="selectGroup(group)"
+        >
+          <span class="group-icon" [style.background]="groupColor(group.id)">
+            <i [class]="groupIcon(group.id)"></i>
+          </span>
+          <span class="group-info">
+            <span class="group-name">{{ group.name }}</span>
+            <span class="group-desc">Acceder al tablero y tickets del grupo</span>
+          </span>
+          <span class="group-arrow">
+            <i class="pi pi-chevron-right"></i>
+          </span>
+        </button>
+      }
+
+      @if (!groups.length) {
+        <div class="gs-empty">
+          <i class="pi pi-inbox"></i>
+          <span>No tienes grupos asignados a tu cuenta.</span>
+        </div>
+      }
+    </div>
+
+    <!-- Pie -->
+    <footer class="gs-footer">
+      <i class="pi pi-sign-out"></i>
+      <span>¿Te equivocaste de cuenta?</span>
+      <a [routerLink]="['/pages/auth/login']" class="gs-link">Cerrar sesión</a>
+    </footer>
+
+  </div>
+</div>

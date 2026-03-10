@@ -6,6 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
 import { MenuModule } from 'primeng/menu';
+import { HasPermissionDirective } from '../../directives/has-permission.directive';
 
 interface FeatureCard {
   title: string;
@@ -15,13 +16,14 @@ interface FeatureCard {
 
 @Component({
   selector: 'app-home-page',
-  imports: [FormsModule, RouterLink, CardModule, InputTextModule, ButtonModule, MenuModule],
+  imports: [FormsModule, RouterLink, CardModule, InputTextModule, ButtonModule, MenuModule, HasPermissionDirective],
   templateUrl: './home.page.html',
   styleUrl: './home.page.css'
 })
 export class HomePageComponent {
   search = '';
   readonly isLoggedIn = !!sessionStorage.getItem('authUser');
+  readonly selectedGroupName = sessionStorage.getItem('selectedGroupName') || '';
 
   readonly quickMenuItems: MenuItem[] = [
     { label: 'Nuevo proyecto', icon: 'pi pi-plus-circle' },

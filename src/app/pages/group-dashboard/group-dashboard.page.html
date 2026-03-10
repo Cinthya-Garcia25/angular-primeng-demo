@@ -1,0 +1,262 @@
+<!-- ════════════════════════════════════════
+     DASHBOARD DEL GRUPO
+════════════════════════════════════════ -->
+<div class="db-wrapper">
+
+  <!-- ── HEADER ────────────────────────── -->
+  <header class="db-header">
+    <div class="db-header-left">
+      <a pButton text severity="secondary" icon="pi pi-arrow-left" size="small"
+         [routerLink]="['/pages/auth/group-selection']"
+         pTooltip="Cambiar de grupo" tooltipPosition="right"></a>
+
+      <div class="db-group-badge">
+        <i class="pi pi-users"></i>
+      </div>
+
+      <div class="db-header-info">
+        <div class="db-breadcrumb">
+          <span class="db-breadcrumb-sep">Mis grupos</span>
+          <i class="pi pi-angle-right db-breadcrumb-sep"></i>
+          <span class="db-group-name">{{ selectedGroupName || selectedGroupId }}</span>
+        </div>
+        <p class="db-header-sub">{{ totalTickets }} ticket{{ totalTickets !== 1 ? 's' : '' }} en este espacio</p>
+      </div>
+    </div>
+
+    <div class="db-header-right">
+      <a pButton severity="secondary" icon="pi pi-table" label="Tablero Kanban"
+         size="small" [routerLink]="['/pages/kanban']"></a>
+      <a pButton severity="secondary" icon="pi pi-list" label="Ver todos"
+         size="small" [routerLink]="['/pages/tickets']"></a>
+      @if (canCreateTicket) {
+        <button pButton icon="pi pi-plus" label="Crear ticket"
+                size="small" (click)="openCreateDialog()"></button>
+      }
+    </div>
+  </header>
+
+  <!-- ── KPI CARDS ─────────────────────── -->
+  <section class="db-kpi-grid">
+    @for (c of columns; track c.status) {
+      <div class="kpi-card" [style.--accent]="statusAccent(c.status)">
+        <div class="kpi-icon-wrap">
+          <i [class]="statusIcon(c.status)"></i>
+        </div>
+        <div class="kpi-body">
+          <div class="kpi-count">{{ countByStatus(c.status) }}</div>
+          <div class="kpi-label">{{ c.label }}</div>
+        </div>
+        <div class="kpi-bar">
+          <div class="kpi-bar-fill"
+               [style.width.%]="totalTickets ? (countByStatus(c.status) / totalTickets) * 100 : 0">
+          </div>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- ── CONTENIDO: MINI-LISTA + KANBAN ── -->
+  <div class="db-content-grid">
+
+    <!-- Mini-lista lateral -->
+    <aside class="db-aside">
+
+      <!-- Mis tickets -->
+      <div class="aside-section">
+        <div class="aside-section-header">
+          <i class="pi pi-user"></i>
+          <span>Mis tickets</span>
+          @if (myTickets.length) {
+            <span class="aside-badge">{{ myTickets.length }}</span>
+          }
+        </div>
+
+        @if (myTickets.length) {
+          <ul class="mini-list">
+            @for (t of myTickets; track t.id) {
+              <li class="mini-item">
+                <div class="mini-item-top">
+                  <span class="mini-title">{{ t.title }}</span>
+                  <p-tag [value]="statusLabel(t.status)" [severity]="statusSeverity(t.status)" />
+                </div>
+                <div class="mini-item-meta">
+                  <i class="pi pi-calendar-clock"></i>
+                  <span>{{ formatDate(t.createdAt) }}</span>
+                </div>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="aside-empty">
+            <i class="pi pi-inbox"></i>
+            <span>No tienes tickets asignados.</span>
+          </div>
+        }
+      </div>
+
+      <!-- Tickets recientes -->
+      <div class="aside-section">
+        <div class="aside-section-header">
+          <i class="pi pi-history"></i>
+          <span>Recientes</span>
+        </div>
+
+        @if (recentTickets.length) {
+          <ul class="mini-list">
+            @for (t of recentTickets; track t.id) {
+              <li class="mini-item">
+                <div class="mini-item-top">
+                  <span class="mini-title">{{ t.title }}</span>
+                </div>
+                <div class="mini-item-meta">
+                  <span class="assignee-chip">{{ assigneeInitial(t.assignee) }}</span>
+                  <span class="muted-text">{{ t.assignee }}</span>
+                  <span class="muted-text ml-auto">{{ formatDate(t.createdAt) }}</span>
+                </div>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="aside-empty">
+            <i class="pi pi-inbox"></i>
+            <span>Aún no hay tickets.</span>
+          </div>
+        }
+      </div>
+
+    </aside>
+
+    <!-- Tablero Kanban -->
+    <section class="db-kanban">
+
+      <div class="kanban-header-row">
+        <h3 class="kanban-title"><i class="pi pi-table"></i> Tablero Kanban</h3>
+        <span class="kanban-hint">Los tickets se agrupan automáticamente por estado</span>
+      </div>
+
+      <div class="kanban-board">
+        @for (c of columns; track c.status) {
+          <div class="kanban-col" 
+               [class.drop-active]="dropTargetStatus === c.status"
+               [style.--col-accent]="statusAccent(c.status)"
+               (dragover)="onDragOver($event, c.status)"
+               (dragleave)="onDragLeave($event, c.status)"
+               (drop)="onDrop($event, c.status)">
+
+            <!-- Cabecera de columna -->
+            <div class="kanban-col-head">
+              <div class="kanban-col-title">
+                <i [class]="statusIcon(c.status)"></i>
+                <span>{{ c.label }}</span>
+              </div>
+              <span class="kanban-col-count">{{ countByStatus(c.status) }}</span>
+            </div>
+
+            <!-- Cuerpo de columna -->
+            <div class="kanban-col-body">
+              @for (t of ticketsByStatus(c.status); track t.id) {
+                <div class="ticket-card"
+                     [class.is-dragging]="draggedTicketId === t.id"
+                     [draggable]="true"
+                     (dragstart)="onDragStart($event, t)"
+                     (dragend)="onDragEnd()">
+                  <div class="ticket-card-top">
+                    <span class="ticket-title">{{ t.title }}</span>
+                  </div>
+                  <div class="ticket-card-meta">
+                    <span class="assignee-chip">{{ assigneeInitial(t.assignee) }}</span>
+                    <span class="muted-text">{{ t.assignee }}</span>
+                    <span class="muted-text ml-auto">{{ formatDate(t.createdAt) }}</span>
+                  </div>
+                </div>
+              }
+
+              @if (!ticketsByStatus(c.status).length) {
+                <div class="kanban-empty">
+                  <i class="pi pi-inbox"></i>
+                  <span>Sin tickets</span>
+                </div>
+              }
+            </div>
+
+          </div>
+        }
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     DIÁLOGO: CREAR TICKET
+════════════════════════════════════════ -->
+<p-dialog
+  header="Crear nuevo ticket"
+  [(visible)]="createDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '38rem', maxWidth: '95vw' }"
+  (onHide)="closeCreateDialog()"
+>
+  <form [formGroup]="createForm" (ngSubmit)="saveCreatedTicket()" class="create-form">
+
+    <div class="cf-field">
+      <label for="ct-title" class="cf-label">
+        <i class="pi pi-tag"></i> Título <span class="cf-required">*</span>
+      </label>
+      <input pInputText id="ct-title" type="text"
+             formControlName="title" placeholder="Ej: Error al guardar el formulario" />
+      @if (createForm.controls.title.invalid &&
+          (createForm.controls.title.dirty || createForm.controls.title.touched)) {
+        <small class="cf-error">Título requerido (mínimo 3 caracteres).</small>
+      }
+    </div>
+
+    <div class="cf-field">
+      <label for="ct-desc" class="cf-label">
+        <i class="pi pi-align-left"></i> Descripción
+      </label>
+      <textarea pInputTextarea id="ct-desc" formControlName="description" rows="3"
+                placeholder="Detalles opcionales..."></textarea>
+    </div>
+
+    <div class="cf-two-cols">
+      <div class="cf-field">
+        <label for="ct-status" class="cf-label">
+          <i class="pi pi-flag"></i> Estado <span class="cf-required">*</span>
+        </label>
+        <p-select id="ct-status" [options]="statusOptions"
+                  optionLabel="label" optionValue="value"
+                  formControlName="status" placeholder="Selecciona estado" />
+      </div>
+      <div class="cf-field">
+        <label for="ct-priority" class="cf-label">
+          <i class="pi pi-bolt"></i> Prioridad <span class="cf-required">*</span>
+        </label>
+        <p-select id="ct-priority" 
+                  [options]="[{label: 'Alta', value: 'alta'}, {label: 'Media', value: 'media'}, {label: 'Baja', value: 'baja'}]"
+                  optionLabel="label" optionValue="value"
+                  formControlName="priority" placeholder="Prioridad" />
+      </div>
+    </div>
+
+    <div class="cf-two-cols">
+      <div class="cf-field">
+        <label for="ct-assignee" class="cf-label">
+          <i class="pi pi-user"></i> Asignado a
+        </label>
+        <input pInputText id="ct-assignee" type="text"
+               formControlName="assignee" placeholder="Nombre del responsable (opcional)" />
+      </div>
+    </div>
+
+    <div class="cf-actions">
+      <button pButton type="button" label="Cancelar" severity="secondary"
+              icon="pi pi-times" (click)="closeCreateDialog()"></button>
+      <button pButton type="submit" label="Crear ticket" icon="pi pi-check"></button>
+    </div>
+
+  </form>
+</p-dialog>

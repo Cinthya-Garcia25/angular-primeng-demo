@@ -1,5 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, Validators, FormBuilder } from '@angular/forms';
+import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -7,6 +8,14 @@ import { TextareaModule } from 'primeng/textarea';
 import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { PermissionsService } from '../../services/permissions.service';
+import { Permission } from '../../models/permissions.model';
+import { HasPermissionDirective } from '../../directives/has-permission.directive';
+import { TooltipModule } from 'primeng/tooltip';
+import { TicketsMockService } from '../../services/tickets-mock.service';
+import { Subscription } from 'rxjs';
 
 interface GroupItem {
   id: number;
@@ -18,7 +27,7 @@ interface GroupItem {
   description: string;
 }
 
-const GROUPS_STORAGE_KEY = 'groupsCrudDataV2';
+const GROUPS_STORAGE_KEY = 'groupsCrudDataV3';
 
 @Component({
   selector: 'app-groups-page',
@@ -31,13 +40,22 @@ const GROUPS_STORAGE_KEY = 'groupsCrudDataV2';
     TextareaModule,
     TableModule,
     DialogModule,
-    TagModule
+    TagModule,
+    ToastModule,
+    TooltipModule,
+    HasPermissionDirective
   ],
+  providers: [MessageService],
   templateUrl: './groups.page.html',
   styleUrl: './groups.page.css'
 })
-export class GroupsPageComponent {
+export class GroupsPageComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+  private readonly permissionsService = inject(PermissionsService);
+  private readonly ticketsMockService = inject(TicketsMockService);
+  private readonly sub = new Subscription();
 
   readonly groupForm = this.fb.group({
     level: ['Medio', [Validators.required]],
@@ -60,6 +78,44 @@ export class GroupsPageComponent {
 
   constructor() {
     this.loadGroups();
+  }
+
+  ngOnInit(): void {
+    this.sub.add(
+      this.ticketsMockService.getAll().subscribe(tickets => {
+        this.updateTicketCounts(tickets);
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.sub.unsubscribe();
+  }
+
+  private updateTicketCounts(tickets: any[]): void {
+    if (!this.groups.length) return;
+    
+    // Crear un mapa de conteo por grupo
+    const ticketCounts = tickets.reduce((acc, ticket) => {
+      const groupId = ticket.groupId;
+      acc[groupId] = (acc[groupId] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Actualizar los grupos con el nuevo conteo
+    let changed = false;
+    this.groups = this.groups.map(group => {
+      const actualCount = ticketCounts[String(group.id)] || 0;
+      if (group.tickets !== actualCount) {
+        changed = true;
+        return { ...group, tickets: actualCount };
+      }
+      return group;
+    });
+
+    if (changed) {
+      this.persistGroups();
+    }
   }
 
   get filteredGroups(): GroupItem[] {
@@ -109,6 +165,21 @@ export class GroupsPageComponent {
       description: group.description
     });
     this.dialogVisible = true;
+  }
+
+  enterGroup(group: GroupItem): void {
+    sessionStorage.setItem('selectedGroupId', String(group.id));
+    sessionStorage.setItem('selectedGroupName', group.name);
+    
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Grupo cambiado',
+      detail: `Ahora estás trabajando en: ${group.name}`
+    });
+
+    setTimeout(() => {
+      this.router.navigate(['/pages/group-dashboard']);
+    }, 800);
   }
 
   saveGroup(): void {
@@ -206,6 +277,11 @@ export class GroupsPageComponent {
           typeof item?.description === 'string'
       );
 
+      if (this.groups.length === 0) {
+        this.groups = this.seedGroups();
+        this.persistGroups();
+      }
+
       const maxId = this.groups.reduce((currentMax, group) => Math.max(currentMax, group.id), 0);
       this.nextId = maxId + 1;
     } catch {
@@ -224,47 +300,65 @@ export class GroupsPageComponent {
       {
         id: 1,
         level: 'Alto',
-        author: 'Carlos Mendoza',
-        name: 'Desarrollo Frontend',
+        author: 'admin',
+        name: 'Equipo Dev',
         members: 5,
         tickets: 12,
-        description: 'Equipo encargado del desarrollo de interfaces de usuario'
+        description: 'Equipo encargado del desarrollo de interfaces de usuario y backend'
       },
       {
         id: 2,
         level: 'Medio',
-        author: 'Ana Garcia',
-        name: 'Backend API',
+        author: 'admin',
+        name: 'Soporte',
         members: 4,
         tickets: 8,
-        description: 'Equipo de servicios y APIs REST'
+        description: 'Equipo de atencion a clientes y resolucion de incidentes'
       },
       {
         id: 3,
         level: 'Bajo',
-        author: 'Luis Perez',
-        name: 'QA Testing',
+        author: 'admin',
+        name: 'UX/UI',
         members: 3,
         tickets: 20,
-        description: 'Equipo de aseguramiento de calidad y pruebas'
+        description: 'Diseno de experiencia e interfaz de usuario'
       },
       {
         id: 4,
         level: 'Alto',
-        author: 'Maria Lopez',
-        name: 'Infraestructura',
+        author: 'admin',
+        name: 'Ventas Corporativas',
         members: 2,
         tickets: 5,
-        description: 'Infraestructura, CI/CD y despliegues'
+        description: 'Equipo encargado de ventas a nivel corporativo'
       },
       {
         id: 5,
         level: 'Medio',
-        author: 'Roberto Diaz',
-        name: 'Diseno UX/UI',
+        author: 'admin',
+        name: 'Marketing Digital',
         members: 3,
         tickets: 15,
-        description: 'Diseno de experiencia e interfaz de usuario'
+        description: 'Estrategias de marketing y redes sociales'
+      },
+      {
+        id: 6,
+        level: 'Alto',
+        author: 'admin',
+        name: 'Product Management',
+        members: 2,
+        tickets: 5,
+        description: 'Gestion de producto y roadmap'
+      },
+      {
+        id: 7,
+        level: 'Medio',
+        author: 'admin',
+        name: 'Quality Assurance',
+        members: 3,
+        tickets: 15,
+        description: 'Aseguramiento de calidad y pruebas'
       }
     ];
   }

@@ -1,0 +1,523 @@
+<!-- ════════════════════════════════════════════════════
+     TABLERO KANBAN
+════════════════════════════════════════════════════ -->
+<div class="kb-wrapper">
+
+  <!-- ── HEADER ─────────────────────────────────────── -->
+  <header class="kb-header">
+    <div class="kb-header-left">
+      <a pButton text severity="secondary" icon="pi pi-arrow-left" size="small"
+         [routerLink]="['/pages/group-dashboard']"
+         pTooltip="Volver al dashboard" tooltipPosition="right"></a>
+
+      <div class="kb-group-badge">
+        <i class="pi pi-table"></i>
+      </div>
+
+      <div class="kb-header-info">
+        <div class="kb-breadcrumb">
+          <span class="kb-bc-muted">{{ selectedGroupName || selectedGroupId }}</span>
+          <i class="pi pi-angle-right kb-bc-muted"></i>
+          <span class="kb-bc-current">Tablero Kanban</span>
+        </div>
+        <p class="kb-header-sub">
+          {{ totalTickets }} ticket{{ totalTickets !== 1 ? 's' : '' }} en este espacio
+        </p>
+      </div>
+    </div>
+
+    <div class="kb-header-right">
+      @if (canAdd()) {
+        <button pButton icon="pi pi-plus" label="Nuevo ticket"
+                size="small" (click)="openCreateDialog()"></button>
+      }
+    </div>
+  </header>
+
+  <!-- ── TOOLBAR / FILTROS ──────────────────────────── -->
+  <div class="kb-toolbar">
+    <div class="kb-search-wrap">
+      <i class="pi pi-search kb-search-icon"></i>
+      <input class="kb-search-input"
+             type="text"
+             placeholder="Buscar ticket, asignado…"
+             [(ngModel)]="searchQuery" />
+      @if (searchQuery) {
+        <button class="kb-search-clear" type="button" (click)="searchQuery = ''">
+          <i class="pi pi-times"></i>
+        </button>
+      }
+    </div>
+
+    <p-select
+      [options]="priorityFilterOptions"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Prioridad"
+      [(ngModel)]="filterPriority"
+      class="kb-filter-select"
+    />
+
+    @if (canViewAllTickets) {
+      <p-select
+        [options]="assigneeOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Asignado"
+        [(ngModel)]="filterAssignee"
+        class="kb-filter-select"
+      />
+    }
+
+    <div class="kb-quick-filters">
+      <button pButton type="button" size="small" severity="secondary" outlined
+              label="Todos" icon="pi pi-list"
+              [class.p-button-outlined]="filterAssignee !== '' && filterPriority !== ''"
+              (click)="clearFilters()"></button>
+      @if (canViewAllTickets) {
+        <button pButton type="button" size="small" severity="secondary" outlined
+                label="Mis tickets" icon="pi pi-user"
+                [class.p-button-outlined]="filterAssignee !== currentUser"
+                (click)="applyQuickFilter('mine')"></button>
+        <button pButton type="button" size="small" severity="secondary" outlined
+                label="Sin asignar" icon="pi pi-user-minus"
+                [class.p-button-outlined]="filterAssignee !== 'unassigned_placeholder'"
+                (click)="applyQuickFilter('unassigned')"></button>
+      }
+      <button pButton type="button" size="small" severity="danger" outlined
+              label="Prioridad Alta" icon="pi pi-bolt"
+              [class.p-button-outlined]="filterPriority !== 'alta'"
+              (click)="applyQuickFilter('high_priority')"></button>
+    </div>
+
+    @if (hasFilters) {
+      <button pButton type="button" text severity="secondary"
+              icon="pi pi-filter-slash" label="Limpiar"
+              size="small" (click)="clearFilters()"></button>
+    }
+
+    <div class="kb-toolbar-spacer"></div>
+
+    <!-- Mini contadores de estado -->
+    @for (c of columns; track c.status) {
+      <span class="kb-status-chip" [style.--chip-color]="statusAccent(c.status)">
+        <i [class]="statusIcon(c.status)"></i>
+        {{ filteredByStatus(c.status).length }}
+      </span>
+    }
+  </div>
+
+  <!-- ── BOARD ──────────────────────────────────────── -->
+  <div class="kb-board">
+    @for (col of columns; track col.status) {
+      <div
+        class="kb-col"
+        [class.drop-active]="dropTargetStatus === col.status"
+        [style.--col-accent]="statusAccent(col.status)"
+        (dragover)="onDragOver($event, col.status)"
+        (dragleave)="onDragLeave($event, col.status)"
+        (drop)="onDrop($event, col.status)"
+      >
+        <!-- Cabecera de columna -->
+        <div class="kb-col-head">
+          <div class="kb-col-title">
+            <i [class]="statusIcon(col.status)"></i>
+            <span>{{ col.label }}</span>
+          </div>
+          <span class="kb-col-count">{{ filteredByStatus(col.status).length }}</span>
+        </div>
+
+        <!-- Cuerpo: zona de drop -->
+        <div class="kb-col-body">
+
+          @for (ticket of filteredByStatus(col.status); track ticket.id) {
+            <div
+              class="kb-card"
+              [class.is-dragging]="draggedTicketId === ticket.id"
+              [draggable]="true"
+              (dragstart)="onDragStart($event, ticket)"
+              (dragend)="onDragEnd()"
+              (click)="openDetailDialog(ticket)"
+            >
+              <!-- Franja de prioridad (izq.) -->
+              <div class="kb-card-priority-stripe"
+                   [style.background]="priorityAccent(ticket.priority)"></div>
+
+              <div class="kb-card-inner">
+                <!-- Título + badge de prioridad -->
+                <div class="kb-card-top">
+                  <span class="kb-card-title">{{ ticket.title }}</span>
+                  <p-tag
+                    [value]="priorityLabel(ticket.priority)"
+                    [severity]="prioritySeverity(ticket.priority)"
+                    styleClass="kb-priority-tag"
+                  />
+                </div>
+
+                <!-- Descripción (preview) -->
+                @if (ticket.description) {
+                  <p class="kb-card-desc">{{ ticket.description }}</p>
+                }
+
+                <!-- Pie: asignado + fecha -->
+                <div class="kb-card-footer">
+                  <span class="kb-assignee-chip">{{ assigneeInitial(ticket.assignee) }}</span>
+                  <span class="kb-card-meta">{{ ticket.assignee }}</span>
+
+                  @if (ticket.dueDate) {
+                    <span class="kb-due-date" [class.overdue]="isOverdue(ticket.dueDate)">
+                      <i class="pi pi-calendar"></i>
+                      {{ formatDate(ticket.dueDate) }}
+                    </span>
+                  } @else {
+                    <span class="kb-card-meta kb-card-date ml-auto">
+                      {{ formatDate(ticket.createdAt) }}
+                    </span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Columna vacía -->
+          @if (!filteredByStatus(col.status).length) {
+            <div class="kb-col-empty">
+              <i class="pi pi-inbox"></i>
+              <span>Sin tickets</span>
+            </div>
+          }
+
+        </div><!-- /kb-col-body -->
+      </div><!-- /kb-col -->
+    }
+  </div><!-- /kb-board -->
+
+</div><!-- /kb-wrapper -->
+
+
+<!-- ════════════════════════════════════════════════════
+     DIÁLOGO: DETALLE / EDICIÓN
+════════════════════════════════════════════════════ -->
+<p-dialog
+  [header]="dialogMode === 'edit' ? 'Editar ticket' : 'Detalle del ticket'"
+  [(visible)]="detailDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '60rem', maxWidth: '96vw' }"
+  (onHide)="closeDetailDialog()"
+>
+
+  <!-- ── MODO VER (SPLIT VIEW) ── -->
+  @if (selectedTicket && dialogMode === 'view') {
+    <div class="td-split-view">
+
+      <!-- COLUMNA IZQUIERDA: Info del Ticket -->
+      <div class="td-info-col">
+
+        <div class="td-title-row">
+          <div class="td-priority-dot" [style.background]="priorityAccent(selectedTicket.priority)"></div>
+          <h3 class="td-title">{{ selectedTicket.title }}</h3>
+        </div>
+
+        <div class="td-badges">
+          <!-- Si puede editar estado, mostramos un select inline -->
+          @if (canEditStatus) {
+            <p-select
+              [options]="allStatusOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="selectedTicket.status"
+              (ngModelChange)="onInlineStatusChange($event)"
+              styleClass="td-inline-status"
+            />
+          } @else {
+            <p-tag [value]="statusLabel(selectedTicket.status)" [severity]="statusSeverity(selectedTicket.status)" />
+          }
+          <p-tag [value]="priorityLabel(selectedTicket.priority)" [severity]="prioritySeverity(selectedTicket.priority)" />
+        </div>
+
+        @if (selectedTicket.description) {
+          <p class="td-desc">{{ selectedTicket.description }}</p>
+        } @else {
+          <p class="td-no-desc"><i class="pi pi-minus-circle"></i> Sin descripción.</p>
+        }
+
+        <div class="td-meta-grid">
+          <div class="td-meta-item">
+            <span class="td-meta-label"><i class="pi pi-user"></i> Asignado a</span>
+            <div class="td-meta-value">
+              <span class="kb-assignee-chip">{{ assigneeInitial(selectedTicket.assignee) }}</span>
+              <strong>{{ selectedTicket.assignee }}</strong>
+            </div>
+          </div>
+          <div class="td-meta-item">
+            <span class="td-meta-label"><i class="pi pi-user-edit"></i> Creado por</span>
+            <div class="td-meta-value">
+              <span class="kb-assignee-chip">{{ assigneeInitial(selectedTicket.createdBy) }}</span>
+              <strong>{{ selectedTicket.createdBy }}</strong>
+            </div>
+          </div>
+          <div class="td-meta-item">
+            <span class="td-meta-label"><i class="pi pi-calendar-plus"></i> Fecha creación</span>
+            <span class="td-meta-value">{{ formatDate(selectedTicket.createdAt) }}</span>
+          </div>
+          @if (selectedTicket.dueDate) {
+            <div class="td-meta-item">
+              <span class="td-meta-label"><i class="pi pi-calendar"></i> Fecha límite</span>
+              <span class="td-meta-value" [class.td-overdue]="isOverdue(selectedTicket.dueDate)">
+                {{ formatDate(selectedTicket.dueDate) }}
+                @if (isOverdue(selectedTicket.dueDate)) {
+                  <span class="td-overdue-badge">Vencido</span>
+                }
+              </span>
+            </div>
+          }
+        </div>
+
+        <!-- Acciones del pie (solo visibles en la col izquierda) -->
+        <div class="td-footer">
+          @if (canDelete()) {
+            @if (!confirmingDelete) {
+              <button pButton type="button" severity="danger" text
+                      icon="pi pi-trash" label="Eliminar"
+                      (click)="confirmingDelete = true"></button>
+            } @else {
+              <div class="td-confirm-delete">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>¿Eliminar?</span>
+                <button pButton type="button" severity="danger" size="small"
+                        label="Sí" (click)="deleteTicket()"></button>
+                <button pButton type="button" severity="secondary" size="small"
+                        label="No" (click)="confirmingDelete = false"></button>
+              </div>
+            }
+          }
+
+          <div class="td-footer-right">
+            @if (canEditAll) {
+              <button pButton type="button" severity="secondary" label="Editar ticket"
+                      icon="pi pi-pencil" (click)="switchToEditMode()"></button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: Actividad (Tabs) -->
+      <div class="td-activity-col">
+        <div class="td-tabs">
+          <button class="td-tab-btn" [class.active]="activeTab === 'comments'" (click)="activeTab = 'comments'">
+            <i class="pi pi-comments"></i> Comentarios ({{ selectedTicket.comments.length }})
+          </button>
+          <button class="td-tab-btn" [class.active]="activeTab === 'history'" (click)="activeTab = 'history'">
+            <i class="pi pi-history"></i> Historial
+          </button>
+        </div>
+
+        <div class="td-tab-content">
+          <!-- TAPA COMENTARIOS -->
+          @if (activeTab === 'comments') {
+            <div class="td-comments-list">
+              @for (c of selectedTicket.comments; track c.id) {
+                <div class="td-comment">
+                  <div class="td-comment-avatar">{{ assigneeInitial(c.author) }}</div>
+                  <div class="td-comment-body">
+                    <div class="td-comment-header">
+                      <strong>{{ c.author }}</strong>
+                      <span>{{ formatDateTime(c.createdAt) }}</span>
+                    </div>
+                    <div class="td-comment-text">{{ c.text }}</div>
+                  </div>
+                </div>
+              }
+              @if (!selectedTicket.comments.length) {
+                <div class="td-empty-state">
+                  <i class="pi pi-comment"></i>
+                  <p>No hay comentarios aún.</p>
+                </div>
+              }
+            </div>
+
+            @if (canComment) {
+              <div class="td-comment-input-area">
+                <textarea pInputTextarea [(ngModel)]="newCommentText" rows="2"
+                          placeholder="Escribe un comentario..." autoResize="true"></textarea>
+                <div class="td-comment-actions">
+                  <button pButton type="button" label="Comentar" size="small"
+                          icon="pi pi-send" [disabled]="!newCommentText.trim()"
+                          (click)="postComment()"></button>
+                </div>
+              </div>
+            }
+          }
+
+          <!-- TAPA HISTORIAL -->
+          @if (activeTab === 'history') {
+            <div class="td-history-list">
+              @for (h of selectedTicket.history; track h.id) {
+                <div class="td-history-item">
+                  <div class="td-history-dot"></div>
+                  <div class="td-history-content">
+                    <div class="td-history-text">
+                      <strong>{{ h.author }}</strong> {{ h.action }}
+                    </div>
+                    <div class="td-history-date">{{ formatDateTime(h.createdAt) }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+  }
+
+  <!-- ── MODO EDITAR ── -->
+  @if (selectedTicket && dialogMode === 'edit') {
+    <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="td-form">
+
+      <div class="td-form-field">
+        <label class="td-form-label">
+          <i class="pi pi-tag"></i> Título <span class="req">*</span>
+        </label>
+        <input pInputText formControlName="title" placeholder="Título del ticket" />
+        @if (formControlError('edit', 'title')) {
+          <small class="td-form-error">Título requerido (mín. 3 caracteres).</small>
+        }
+      </div>
+
+      <div class="td-form-field">
+        <label class="td-form-label"><i class="pi pi-align-left"></i> Descripción</label>
+        <textarea pInputTextarea formControlName="description" rows="3"
+                  placeholder="Describe el problema o tarea…" autoResize="true"></textarea>
+      </div>
+
+      <div class="td-form-two-cols">
+        <div class="td-form-field">
+          <label class="td-form-label">
+            <i class="pi pi-flag"></i> Estado <span class="req">*</span>
+          </label>
+          <p-select [options]="allStatusOptions" optionLabel="label" optionValue="value"
+                    formControlName="status" placeholder="Estado" />
+        </div>
+        <div class="td-form-field">
+          <label class="td-form-label">
+            <i class="pi pi-bolt"></i> Prioridad <span class="req">*</span>
+          </label>
+          <p-select [options]="priorityOptions" optionLabel="label" optionValue="value"
+                    formControlName="priority" placeholder="Prioridad" />
+        </div>
+      </div>
+
+      <div class="td-form-two-cols">
+        <div class="td-form-field">
+          <label class="td-form-label">
+            <i class="pi pi-user"></i> Asignado a <span class="req">*</span>
+          </label>
+          <input pInputText formControlName="assignee" placeholder="Responsable" [readonly]="!canViewAllTickets" />
+          @if (formControlError('edit', 'assignee')) {
+            <small class="td-form-error">Campo requerido (mín. 2 caracteres).</small>
+          }
+        </div>
+      </div>
+      <div class="td-form-two-cols">
+        <div class="td-form-field">
+          <label class="td-form-label">
+            <i class="pi pi-calendar-plus"></i> Fecha de creación <span class="req">*</span>
+          </label>
+          <input class="td-date-input" type="date" formControlName="createdAt" />
+          @if (formControlError('edit', 'createdAt')) {
+            <small class="td-form-error">Fecha de creación requerida.</small>
+          }
+        </div>
+        <div class="td-form-field">
+          <label class="td-form-label">
+            <i class="pi pi-calendar"></i> Fecha límite
+          </label>
+          <input class="td-date-input" type="date" formControlName="dueDate" />
+        </div>
+      </div>
+
+      <div class="td-form-actions">
+        <button pButton type="button" severity="secondary" label="Cancelar"
+                (click)="dialogMode = 'view'"></button>
+        <button pButton type="submit" label="Guardar cambios" icon="pi pi-check"></button>
+      </div>
+
+    </form>
+  }
+
+</p-dialog>
+
+
+<!-- ════════════════════════════════════════════════════
+     DIÁLOGO: CREAR TICKET
+════════════════════════════════════════════════════ -->
+<p-dialog
+  header="Nuevo ticket"
+  [(visible)]="createDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '38rem', maxWidth: '96vw' }"
+  (onHide)="closeCreateDialog()"
+>
+  <form [formGroup]="createForm" (ngSubmit)="saveCreate()" class="td-form">
+
+    <div class="td-form-field">
+      <label class="td-form-label">
+        <i class="pi pi-tag"></i> Título <span class="req">*</span>
+      </label>
+      <input pInputText formControlName="title" placeholder="Ej: Error al cargar datos" />
+      @if (formControlError('create', 'title')) {
+        <small class="td-form-error">Título requerido (mín. 3 caracteres).</small>
+      }
+    </div>
+
+    <div class="td-form-field">
+      <label class="td-form-label"><i class="pi pi-align-left"></i> Descripción</label>
+      <textarea pInputTextarea formControlName="description" rows="3"
+                placeholder="Detalles opcionales…" autoResize="true"></textarea>
+    </div>
+
+    <div class="td-form-two-cols">
+      <div class="td-form-field">
+        <label class="td-form-label">
+          <i class="pi pi-flag"></i> Estado <span class="req">*</span>
+        </label>
+        <p-select [options]="allStatusOptions" optionLabel="label" optionValue="value"
+                  formControlName="status" placeholder="Estado" />
+      </div>
+      <div class="td-form-field">
+        <label class="td-form-label">
+          <i class="pi pi-bolt"></i> Prioridad <span class="req">*</span>
+        </label>
+        <p-select [options]="priorityOptions" optionLabel="label" optionValue="value"
+                  formControlName="priority" placeholder="Prioridad" />
+      </div>
+    </div>
+
+    <div class="td-form-two-cols">
+      <div class="td-form-field">
+        <label class="td-form-label">
+          <i class="pi pi-user"></i> Asignado a
+        </label>
+        <input pInputText formControlName="assignee" placeholder="Nombre del responsable (opcional)" [readonly]="!canViewAllTickets" />
+      </div>
+      <div class="td-form-field">
+        <label class="td-form-label">
+          <i class="pi pi-calendar"></i> Fecha límite
+        </label>
+        <input class="td-date-input" type="date" formControlName="dueDate" />
+      </div>
+    </div>
+
+    <div class="td-form-actions">
+      <button pButton type="button" severity="secondary" label="Cancelar"
+              icon="pi pi-times" (click)="closeCreateDialog()"></button>
+      <button pButton type="submit" label="Crear ticket" icon="pi pi-plus"></button>
+    </div>
+
+  </form>
+</p-dialog>

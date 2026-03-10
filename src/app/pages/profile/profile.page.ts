@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, OnDestroy } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -18,6 +18,12 @@ import { KeyFilterModule } from 'primeng/keyfilter';
 import { MessageModule } from 'primeng/message';
 import { PasswordModule } from 'primeng/password';
 import { ToastModule } from 'primeng/toast';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { TicketsMockService } from '../../services/tickets-mock.service';
+import { Ticket } from '../../models/ticket.model';
+import { Subscription } from 'rxjs';
+import { DatePipe } from '@angular/common';
 
 interface UserProfile {
   username: string;
@@ -66,19 +72,29 @@ function passwordsMatchValidator(): ValidatorFn {
     KeyFilterModule,
     MessageModule,
     PasswordModule,
-    ToastModule
+    ToastModule,
+    TableModule,
+    TagModule,
+    DatePipe
   ],
   providers: [MessageService],
   templateUrl: './profile.page.html',
   styleUrl: './profile.page.css'
 })
-export class ProfilePageComponent implements OnInit {
+export class ProfilePageComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly ticketsMockService = inject(TicketsMockService);
+  private readonly sub = new Subscription();
 
   isAccountActive = true;
   deactivateDialogVisible = false;
+
+  userTickets: Ticket[] = [];
+  openTicketsCount = 0;
+  inProgressTicketsCount = 0;
+  closedTicketsCount = 0;
 
   readonly profileForm = this.fb.group(
     {
@@ -101,6 +117,11 @@ export class ProfilePageComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProfile();
+    this.loadUserTickets();
+  }
+
+  ngOnDestroy(): void {
+    this.sub.unsubscribe();
   }
 
   controlHasError(controlName: keyof typeof this.profileForm.controls): boolean {
@@ -113,6 +134,59 @@ export class ProfilePageComponent implements OnInit {
       this.profileForm.hasError('passwordMismatch') &&
       (this.profileForm.controls.confirmPassword.dirty || this.profileForm.controls.confirmPassword.touched)
     );
+  }
+
+  private loadUserTickets(): void {
+    this.sub.add(
+      this.ticketsMockService.getAll().subscribe((allTickets) => {
+        const currentAuthUser = (sessionStorage.getItem('authUser') ?? '').toLowerCase();
+        const fullName = (this.profileForm.get('fullName')?.value ?? '').toLowerCase();
+
+        this.userTickets = allTickets.filter(ticket => {
+          const assignee = (ticket.assignee || '').toLowerCase();
+          return assignee === currentAuthUser || (fullName && assignee === fullName) || assignee.includes(currentAuthUser);
+        });
+
+        this.openTicketsCount = this.userTickets.filter(t => t.status === 'pendiente').length;
+        this.inProgressTicketsCount = this.userTickets.filter(t => t.status === 'en_progreso' || t.status === 'revision').length;
+        this.closedTicketsCount = this.userTickets.filter(t => t.status === 'hecho' || t.status === 'bloqueado').length;
+      })
+    );
+  }
+
+  stateSeverity(state: string): 'danger' | 'warn' | 'success' | 'info' | 'secondary' {
+    if (state === 'hecho') return 'success';
+    if (state === 'pendiente') return 'info';
+    if (state === 'en_progreso') return 'warn';
+    if (state === 'revision') return 'secondary';
+    return 'danger';
+  }
+
+  prioritySeverity(priority: string): 'danger' | 'warn' | 'success' | 'info' {
+    if (priority === 'alta') return 'danger';
+    if (priority === 'media') return 'warn';
+    if (priority === 'baja') return 'success';
+    return 'info';
+  }
+
+  statusLabel(status: string): string {
+    const map: Record<string, string> = {
+      pendiente: 'Pendiente',
+      en_progreso: 'En Progreso',
+      revision: 'Revisión',
+      hecho: 'Hecho',
+      bloqueado: 'Bloqueado'
+    };
+    return map[status] || status;
+  }
+
+  priorityLabel(priority: string): string {
+    const map: Record<string, string> = {
+      alta: 'Alta',
+      media: 'Media',
+      baja: 'Baja'
+    };
+    return map[priority] || priority;
   }
 
   private loadProfile(): void {

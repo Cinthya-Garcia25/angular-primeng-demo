@@ -3,7 +3,7 @@
 }
 
 .profile-wrapper {
-  width: min(100%, 32rem);
+  width: min(100%, 48rem);
   margin: 0 auto;
 }
 
@@ -73,4 +73,58 @@
 
 .delete-confirm-content p {
   margin: 0;
+}
+
+.tickets-section {
+  margin-top: 1.5rem;
+}
+
+.tickets-summary {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+}
+
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  min-width: 100px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.summary-card.open {
+  background-color: var(--p-green-50);
+  border: 1px solid var(--p-green-200);
+}
+.summary-card.open .count { color: var(--p-green-700); }
+
+.summary-card.in-progress {
+  background-color: var(--p-yellow-50);
+  border: 1px solid var(--p-yellow-200);
+}
+.summary-card.in-progress .count { color: var(--p-yellow-700); }
+
+.summary-card.closed {
+  background-color: var(--p-red-50);
+  border: 1px solid var(--p-red-200);
+}
+.summary-card.closed .count { color: var(--p-red-700); }
+
+.summary-card .count {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.summary-card .label {
+  font-size: 0.85rem;
+  color: var(--p-text-color-secondary);
+}
+
+.text-center {
+  text-align: center;
 }

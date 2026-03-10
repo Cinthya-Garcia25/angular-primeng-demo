@@ -134,6 +134,52 @@
       </div>
     </form>
   </p-card>
+
+  <p-card styleClass="profile-card tickets-section">
+    <div class="profile-header">
+      <i class="pi pi-ticket profile-icon"></i>
+      <h3 class="subtitle">Mis Tickets Asignados</h3>
+    </div>
+
+    <div class="tickets-summary">
+      <div class="summary-card open">
+        <span class="count">{{ openTicketsCount }}</span>
+        <span class="label">Abiertos</span>
+      </div>
+      <div class="summary-card in-progress">
+        <span class="count">{{ inProgressTicketsCount }}</span>
+        <span class="label">En Progreso</span>
+      </div>
+      <div class="summary-card closed">
+        <span class="count">{{ closedTicketsCount }}</span>
+        <span class="label">Cerrados</span>
+      </div>
+    </div>
+
+    <p-table [value]="userTickets" [paginator]="true" [rows]="5" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>ID / Título</th>
+          <th>Estado</th>
+          <th>Prioridad</th>
+          <th>Fecha Límite</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-ticket>
+        <tr>
+          <td><strong>#{{ ticket.id }}</strong> - {{ ticket.title }}</td>
+          <td><p-tag [value]="statusLabel(ticket.status)" [severity]="stateSeverity(ticket.status)"></p-tag></td>
+          <td><p-tag [value]="priorityLabel(ticket.priority)" [severity]="prioritySeverity(ticket.priority)"></p-tag></td>
+          <td>{{ ticket.dueDate ? (ticket.dueDate | date:'dd/MM/yyyy') : 'Sin fecha' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="text-center">No tienes tickets asignados actualmente.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
 </section>
 
 <p-dialog

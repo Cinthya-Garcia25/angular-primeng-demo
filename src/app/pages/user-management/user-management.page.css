@@ -1,0 +1,161 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.user-management-wrapper {
+  width: 100%;
+  max-width: 90rem;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+}
+
+:host ::ng-deep .table-card {
+  width: 100%;
+  border: 1px solid var(--p-surface-300);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--p-green-100);
+  color: var(--p-green-700);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-badge.inactive {
+  background: var(--p-red-100);
+  color: var(--p-red-700);
+}
+
+.permissions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.perm-chip {
+  background: var(--p-surface-200);
+  color: var(--p-surface-700);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-family: monospace;
+}
+
+.text-muted {
+  color: var(--p-text-color-secondary);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+/* Formulario */
+.user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-top: 1rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.section-title {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: var(--p-primary-color);
+  border-bottom: 1px solid var(--p-surface-200);
+  padding-bottom: 0.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.field label {
+  font-weight: 600;
+}
+
+:host ::ng-deep .field p-password,
+:host ::ng-deep .field p-password .p-password,
+:host ::ng-deep .field p-password .p-password-input {
+  width: 100%;
+}
+
+.req {
+  color: var(--p-red-500);
+}
+
+.field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.perm-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.perm-item label {
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-surface-200);
+}
+
+.text-center {
+  text-align: center;
+}

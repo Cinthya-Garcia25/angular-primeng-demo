@@ -19,11 +19,14 @@ import { MessageModule } from 'primeng/message';
 import { PasswordModule } from 'primeng/password';
 import { ToastModule } from 'primeng/toast';
 
+import { Permission } from '../../../models/permissions.model';
+
 interface RegisteredUser {
   username: string;
   email: string;
   password: string;
   isActive?: boolean;
+  permissions?: Permission[];
 }
 
 const SPECIAL_CHARACTERS = '!@#$%^&*';
@@ -158,7 +161,19 @@ export class RegisterPageComponent {
       return;
     }
 
-    const nextUsers: RegisteredUser[] = [...storedUsers, { username, email, password, isActive: true }];
+    const nextUsers: RegisteredUser[] = [...storedUsers, { 
+      username, 
+      email, 
+      password, 
+      isActive: true,
+      permissions: [
+        Permission.GROUP_VIEW,
+        Permission.TICKET_VIEW,
+        Permission.TICKET_EDIT_STATE,
+        Permission.USER_VIEW,
+        Permission.USER_EDIT
+      ]
+    }];
     localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(nextUsers));
 
     this.messageService.add({

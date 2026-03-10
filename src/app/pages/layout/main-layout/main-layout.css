@@ -26,6 +26,34 @@
   gap: 0.75rem;
 }
 
+.right-group {
+  display: flex;
+  align-items: center;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  gap: 0.5rem;
+}
+
+.user-profile:hover {
+  background-color: var(--p-surface-100);
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
 .topbar h1 {
   margin: 0;
   font-size: 1.2rem;

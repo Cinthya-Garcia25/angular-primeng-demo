@@ -2,96 +2,58 @@
   <div class="sidebar-brand">
     <i class="pi pi-th-large"></i>
     @if (!collapsed) {
-      <span>Workspace</span>
+    <span>Workspace</span>
     }
   </div>
 
   <nav class="sidebar-nav">
-    <a
-      pButton
-      class="p-button-text p-button-secondary nav-item"
-      [routerLink]="['/pages/home']"
-      routerLinkActive="active-link"
-    >
+    <a *ifHasPermission="'ticket:view'" pButton class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/group-dashboard']" routerLinkActive="active-link">
       <i class="pi pi-home"></i>
       @if (!collapsed) {
-        <span>Home</span>
+      <span>Dashboard</span>
       }
     </a>
 
-    <a
-      pButton
-      class="p-button-text p-button-secondary nav-item"
-      [routerLink]="['/pages/profile']"
-      routerLinkActive="active-link"
-    >
-      <i class="pi pi-user"></i>
+    <a *ifHasPermission="'ticket:view'" pButton class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/kanban']" routerLinkActive="active-link">
+      <i class="pi pi-table"></i>
       @if (!collapsed) {
-        <span>Profile</span>
+      <span>Tablero Kanban</span>
       }
     </a>
 
-    <a
-      pButton
-      class="p-button-text p-button-secondary nav-item"
-      [routerLink]="['/pages/groups']"
-      routerLinkActive="active-link"
-    >
+    <a *ifHasPermission="'group:view'" pButton class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/groups']" routerLinkActive="active-link">
       <i class="pi pi-users"></i>
       @if (!collapsed) {
-        <span>Groups</span>
+      <span>Groups</span>
       }
     </a>
 
-    <a
-      pButton
-      class="p-button-text p-button-secondary nav-item"
-      [routerLink]="['/pages/landing']"
-      routerLinkActive="active-link"
-    >
-      <i class="pi pi-compass"></i>
+    <a *ifHasPermission="'group:edit'" pButton class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/group-settings']" routerLinkActive="active-link">
+      <i class="pi pi-cog"></i>
       @if (!collapsed) {
-        <span>Landing</span>
+      <span>Group Settings</span>
       }
     </a>
 
-    <a
-      pButton
-      class="p-button-text p-button-secondary nav-item"
-      [routerLink]="['/pages/auth/login']"
-      routerLinkActive="active-link"
-    >
-      <i class="pi pi-sign-in"></i>
+    <a *ifHasPermission="'users:view'" pButton class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/user-management']" routerLinkActive="active-link">
+      <i class="pi pi-id-card"></i>
       @if (!collapsed) {
-        <span>Login</span>
+      <span>User Management</span>
       }
     </a>
 
-    <a
-      pButton
-      class="p-button-text p-button-secondary nav-item"
-      [routerLink]="['/pages/auth/register']"
-      routerLinkActive="active-link"
-    >
-      <i class="pi pi-user-plus"></i>
+    <a *ifHasPermission="'ticket:view'" pButton class="p-button-text p-button-secondary nav-item"
+      [routerLink]="['/pages/tickets']" routerLinkActive="active-link">
+      <i class="pi pi-list"></i>
       @if (!collapsed) {
-        <span>Register</span>
+      <span>Tickets List</span>
       }
     </a>
-
-    @if (isLoggedIn) {
-      <button
-        pButton
-        type="button"
-        class="p-button-text p-button-danger nav-item logout-item"
-        (click)="requestLogout()"
-      >
-        <i class="pi pi-sign-out"></i>
-        @if (!collapsed) {
-          <span>Cerrar sesion</span>
-        }
-      </button>
-    }
   </nav>
 
   <div class="sidebar-version">

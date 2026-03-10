@@ -13,6 +13,14 @@
         <p class="subtitle">Gestiona tu informacion en un solo lugar.</p>
       </div>
     </div>
+    <div class="right-group">
+      <div class="user-profile" (click)="menu.toggle($event)">
+        <p-avatar [label]="userInitials" shape="circle" styleClass="cursor-pointer"></p-avatar>
+        <span class="user-name cursor-pointer">{{ userName }}</span>
+        <i class="pi pi-angle-down cursor-pointer"></i>
+      </div>
+      <p-menu #menu [model]="userMenuItems" [popup]="true"></p-menu>
+    </div>
   </header>
 
   <section class="layout-body">
