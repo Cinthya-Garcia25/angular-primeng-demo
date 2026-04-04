@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -9,17 +10,22 @@ import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { CheckboxModule } from 'primeng/checkbox';
 import { PasswordModule } from 'primeng/password';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { Permission } from '../../models/permissions.model';
 import { HasPermissionDirective } from '../../directives/has-permission.directive';
 
 interface ManagedUser {
+  id: string;
   username: string;
   email: string;
-  isActive: boolean;
-  permissions: Permission[];
+  is_active: boolean;
+  permisos_globales: Permission[];
 }
 
-const REGISTERED_USERS_KEY = 'registeredUsers';
+interface GroupOption {
+  id: string;
+  nombre: string;
+}
 
 @Component({
   selector: 'app-user-management-page',
@@ -34,6 +40,7 @@ const REGISTERED_USERS_KEY = 'registeredUsers';
     ToastModule,
     CheckboxModule,
     PasswordModule,
+    MultiSelectModule,
     HasPermissionDirective
   ],
   providers: [MessageService],
@@ -41,122 +48,112 @@ const REGISTERED_USERS_KEY = 'registeredUsers';
   styleUrl: './user-management.page.css'
 })
 export class UserManagementPageComponent implements OnInit {
-  private readonly fb = inject(FormBuilder);
+  private readonly fb             = inject(FormBuilder);
   private readonly messageService = inject(MessageService);
+  private readonly http           = inject(HttpClient);
 
   users: ManagedUser[] = [];
-  
+  availableGroups: GroupOption[] = [];
+  loading = false;
   userDialogVisible = false;
   isEditing = false;
+  editingUserId = '';
   editingUsername = '';
 
   readonly allPermissions = Object.values(Permission);
-  
+
+  getPermissionLabel(perm: string): string {
+    const labels: Record<string, string> = {
+      'group:view': 'Ver grupos',         'group:edit': 'Editar grupos',
+      'group:add': 'Crear grupos',         'group:delete': 'Eliminar grupos',
+      'ticket:view': 'Ver tickets',        'tickets:view': 'Ver todos los tickets',
+      'ticket:edit': 'Editar tickets',     'ticket:add': 'Crear tickets',
+      'ticket:delete': 'Eliminar tickets', 'ticket:edit_state': 'Cambiar estado',
+      'user:view': 'Ver usuario',          'users:view': 'Ver todos los usuarios',
+      'user:edit': 'Editar usuarios',      'user:add': 'Crear usuarios',
+      'user:delete': 'Eliminar usuarios',  'permissions:manage': 'Gestionar permisos'
+    };
+    return labels[perm] || perm;
+  }
+
   readonly userForm = this.fb.group({
-    username: ['', [Validators.required, Validators.minLength(3)]],
-    email: ['', [Validators.required, Validators.email]],
-    password: [''],
-    isActive: [true],
-    permissions: this.fb.control<Permission[]>([])
+    username:    ['', [Validators.required, Validators.minLength(3)]],
+    email:       ['', [Validators.required, Validators.email]],
+    password:    [''],
+    is_active:   [true],
+    permissions: this.fb.control<Permission[]>([]),
+    group_ids:   this.fb.control<string[]>([])
   });
+
+  private get authHeaders(): HttpHeaders {
+    return new HttpHeaders({ Authorization: `Bearer ${localStorage.getItem('token')}` });
+  }
 
   ngOnInit(): void {
     this.loadUsers();
+    this.loadGroups();
   }
 
-  private loadUsers(): void {
-    const rawUsers = localStorage.getItem(REGISTERED_USERS_KEY);
-    if (rawUsers) {
-      try {
-        const parsed = JSON.parse(rawUsers);
-        this.users = parsed.map((u: any) => ({
-          username: u.username,
-          email: u.email || `${u.username}@demo.com`,
-          isActive: u.isActive !== false,
-          permissions: Array.isArray(u.permissions) ? u.permissions : []
-        }));
-      } catch {
-        this.users = [];
-      }
-    } else {
-      this.users = [
-        {
-          username: 'superadmin',
-          email: 'superadmin@demo.com',
-          isActive: true,
-          permissions: Object.values(Permission)
-        },
-        {
-          username: 'ids15',
-          email: 'ids15@demo.com',
-          isActive: true,
-          permissions: [
-            Permission.TICKET_VIEW,
-            Permission.TICKET_EDIT_STATE,
-            Permission.GROUP_VIEW,
-            Permission.USER_VIEW,
-            Permission.USER_EDIT
-          ]
-        },
-        {
-          username: 'cinthya',
-          email: 'cinthya@demo.com',
-          isActive: true,
-          permissions: [
-            Permission.TICKET_VIEW,
-            Permission.TICKET_EDIT_STATE,
-            Permission.GROUP_VIEW,
-            Permission.USER_VIEW,
-            Permission.USER_EDIT
-          ]
-        }
-      ];
-      localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(this.users.map(u => ({...u, password: 'Password@1234'}))));
-    }
+  loadUsers(): void {
+    this.loading = true;
+    this.http.get<ManagedUser[]>('/api/users', { headers: this.authHeaders }).subscribe({
+      next: (data) => { this.users = data; this.loading = false; },
+      error: () => { this.loading = false; }
+    });
   }
 
-  private saveUsersToStorage(usersToSave: any[]): void {
-    localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(usersToSave));
-    this.loadUsers();
+  loadGroups(): void {
+    this.http.get<GroupOption[]>('/api/groups', { headers: this.authHeaders }).subscribe({
+      next: (data) => { this.availableGroups = data; },
+      error: () => {}
+    });
   }
 
   openCreateDialog(): void {
     this.isEditing = false;
-    this.editingUsername = '';
+    this.editingUserId = '';
     this.userForm.reset({
-      username: '',
-      email: '',
-      password: '',
-      isActive: true,
+      username: '', email: '', password: '', is_active: true,
       permissions: [
-        Permission.GROUP_VIEW,
-        Permission.TICKET_VIEW,
-        Permission.TICKET_EDIT_STATE,
-        Permission.USER_VIEW,
-        Permission.USER_EDIT
-      ]
+        Permission.GROUP_VIEW, Permission.TICKET_VIEW,
+        Permission.TICKET_EDIT_STATE, Permission.USER_VIEW, Permission.USER_EDIT
+      ],
+      group_ids: []
     });
     this.userForm.controls.password.setValidators([Validators.required, Validators.minLength(6)]);
     this.userForm.controls.password.updateValueAndValidity();
-    
     this.userDialogVisible = true;
   }
 
   openEditDialog(user: ManagedUser): void {
     this.isEditing = true;
+    this.editingUserId = user.id;
     this.editingUsername = user.username;
-    this.userForm.reset({
-      username: user.username,
-      email: user.email,
-      password: '',
-      isActive: user.isActive,
-      permissions: [...user.permissions]
+
+    // Cargar grupos actuales del usuario
+    this.http.get<any>(`/api/users/${user.id}`, { headers: this.authHeaders }).subscribe({
+      next: (data) => {
+        const currentGroupIds = (data.groups ?? []).map((g: any) => g.id);
+        this.userForm.reset({
+          username: user.username, email: user.email,
+          password: '', is_active: user.is_active,
+          permissions: [...user.permisos_globales],
+          group_ids: currentGroupIds
+        });
+      },
+      error: () => {
+        this.userForm.reset({
+          username: user.username, email: user.email,
+          password: '', is_active: user.is_active,
+          permissions: [...user.permisos_globales],
+          group_ids: []
+        });
+      }
     });
+
     this.userForm.controls.password.clearValidators();
     this.userForm.controls.password.updateValueAndValidity();
-    
     this.userForm.controls.username.disable();
-    
     this.userDialogVisible = true;
   }
 
@@ -166,66 +163,32 @@ export class UserManagementPageComponent implements OnInit {
   }
 
   saveUser(): void {
-    if (this.userForm.invalid) {
-      this.userForm.markAllAsTouched();
-      return;
-    }
+    if (this.userForm.invalid) { this.userForm.markAllAsTouched(); return; }
 
-    const formValue = this.userForm.getRawValue();
-    const rawUsers = localStorage.getItem(REGISTERED_USERS_KEY);
-    let allUsers = [];
-    
-    try {
-      allUsers = rawUsers ? JSON.parse(rawUsers) : [];
-    } catch {
-      allUsers = [];
-    }
+    const { username, email, password, is_active, permissions, group_ids } = this.userForm.getRawValue();
 
     if (this.isEditing) {
-      const index = allUsers.findIndex((u: any) => u.username === this.editingUsername);
-      if (index !== -1) {
-        allUsers[index] = {
-          ...allUsers[index],
-          email: formValue.email,
-          isActive: formValue.isActive,
-          permissions: formValue.permissions
-        };
-        if (formValue.password) {
-          allUsers[index].password = formValue.password;
-        }
-        
-        this.messageService.add({ severity: 'success', summary: 'Usuario actualizado', detail: `Se actualizó a ${this.editingUsername}` });
-      }
-    } else {
-      const username = formValue.username?.toLowerCase() || '';
-      
-      if (allUsers.some((u: any) => u.username === username)) {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'El nombre de usuario ya existe' });
-        return;
-      }
-      
-      allUsers.push({
-        username,
-        email: formValue.email,
-        password: formValue.password,
-        isActive: formValue.isActive,
-        permissions: formValue.permissions && formValue.permissions.length > 0 
-          ? formValue.permissions 
-          : [
-              Permission.GROUP_VIEW,
-              Permission.TICKET_VIEW,
-              Permission.TICKET_EDIT_STATE,
-              Permission.USER_VIEW,
-              Permission.USER_EDIT
-            ],
-        groups: []
-      });
-      
-      this.messageService.add({ severity: 'success', summary: 'Usuario creado', detail: `Se creó a ${username}` });
-    }
+      const body: any = { email, is_active, permissions, group_ids };
+      if (password) body.password = password;
 
-    this.saveUsersToStorage(allUsers);
-    this.closeDialog();
+      this.http.put(`/api/users/${this.editingUserId}`, body, { headers: this.authHeaders }).subscribe({
+        next: () => {
+          this.messageService.add({ severity: 'success', summary: 'Usuario actualizado', detail: `Se actualizó ${username}` });
+          this.loadUsers();
+          this.closeDialog();
+        },
+        error: (err) => this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.error ?? 'Error al actualizar' })
+      });
+    } else {
+      this.http.post('/api/auth/users', { username, email, password, permissions, group_ids }, { headers: this.authHeaders }).subscribe({
+        next: () => {
+          this.messageService.add({ severity: 'success', summary: 'Usuario creado', detail: `Se creó ${username}` });
+          this.loadUsers();
+          this.closeDialog();
+        },
+        error: (err) => this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.error ?? 'Error al crear usuario' })
+      });
+    }
   }
 
   deleteUser(user: ManagedUser): void {
@@ -233,37 +196,22 @@ export class UserManagementPageComponent implements OnInit {
       this.messageService.add({ severity: 'error', summary: 'Acción denegada', detail: 'No se puede eliminar al superadmin' });
       return;
     }
-    
-    const rawUsers = localStorage.getItem(REGISTERED_USERS_KEY);
-    if (!rawUsers) return;
-    
-    try {
-      let allUsers = JSON.parse(rawUsers);
-      allUsers = allUsers.filter((u: any) => u.username !== user.username);
-      this.saveUsersToStorage(allUsers);
-      this.messageService.add({ severity: 'info', summary: 'Usuario eliminado', detail: `Se eliminó a ${user.username}` });
-    } catch (e) {
-      console.error(e);
-    }
+    this.http.delete(`/api/users/${user.id}`, { headers: this.authHeaders }).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'info', summary: 'Eliminado', detail: `Se eliminó a ${user.username}` });
+        this.loadUsers();
+      },
+      error: (err) => this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.error ?? 'Error al eliminar' })
+    });
   }
 
   togglePermission(permission: Permission): void {
-    const currentPerms = this.userForm.value.permissions || [];
-    const index = currentPerms.indexOf(permission);
-    
-    let newPerms: Permission[];
-    if (index === -1) {
-      newPerms = [...currentPerms, permission];
-    } else {
-      newPerms = currentPerms.filter(p => p !== permission);
-    }
-    
-    this.userForm.patchValue({ permissions: newPerms });
+    const current = this.userForm.value.permissions ?? [];
+    const idx = current.indexOf(permission);
+    this.userForm.patchValue({ permissions: idx === -1 ? [...current, permission] : current.filter(p => p !== permission) });
   }
 
   hasPermissionSelected(permission: Permission): boolean {
-    const currentPerms = this.userForm.value.permissions || [];
-    return currentPerms.includes(permission);
+    return (this.userForm.value.permissions ?? []).includes(permission);
   }
 }
-

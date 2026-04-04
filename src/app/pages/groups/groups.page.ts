@@ -120,11 +120,27 @@ export class GroupsPageComponent implements OnInit, OnDestroy {
 
   get filteredGroups(): GroupItem[] {
     const query = this.searchValue.trim().toLowerCase();
-    if (!query) {
-      return this.groups;
+    
+    let visibleGroups = this.groups;
+    const rawAuthGroups = sessionStorage.getItem('authGroups');
+    if (rawAuthGroups) {
+      try {
+        const userAssignedGroups = JSON.parse(rawAuthGroups);
+        if (Array.isArray(userAssignedGroups)) {
+          visibleGroups = this.groups.filter(g => 
+            userAssignedGroups.some((ug: any) => ug.name === g.name || ug.id === String(g.id))
+          );
+        }
+      } catch {
+        // Ignorar error de parseo
+      }
     }
 
-    return this.groups.filter((group) =>
+    if (!query) {
+      return visibleGroups;
+    }
+
+    return visibleGroups.filter((group) =>
       [group.level, group.author, group.name, group.description, String(group.members), String(group.tickets)]
         .join(' ')
         .toLowerCase()

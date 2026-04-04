@@ -51,7 +51,7 @@
     <footer class="gs-footer">
       <i class="pi pi-sign-out"></i>
       <span>¿Te equivocaste de cuenta?</span>
-      <a [routerLink]="['/pages/auth/login']" class="gs-link">Cerrar sesión</a>
+      <a (click)="logout()" class="gs-link" style="cursor:pointer">Cerrar sesión</a>
     </footer>
 
   </div>

@@ -77,21 +77,33 @@ export class TicketsPageComponent implements OnInit, OnDestroy {
         { label: 'Baja', value: 'baja' }
     ];
 
-    get canViewAllTickets(): boolean {
-        return this.permissionsService.hasPermission(Permission.TICKET_EDIT) || this.permissionsService.hasPermission(Permission.USERS_VIEW);
+  get canViewTickets(): boolean {
+    // Permiso base para poder ver tickets (propios o de su grupo)
+    return this.permissionsService.hasPermission(Permission.TICKET_VIEW);
+  }
+
+  get canViewAllTickets(): boolean {
+    // Permiso extra para ver todos los tickets del grupo (no solo los propios)
+    return this.permissionsService.hasPermission(Permission.TICKETS_VIEW) || this.permissionsService.hasPermission(Permission.USERS_VIEW);
+  }
+
+  ngOnInit(): void {
+    // Si el usuario no tiene permiso para ver tickets, no cargamos ninguno.
+    if (!this.canViewTickets) {
+      this.tickets = [];
+      return;
     }
 
-    ngOnInit(): void {
-        this.sub.add(
-            this.ticketsMock.getByGroup(this.currentGroupId).subscribe((tickets) => {
-                let visibleTickets = tickets;
-                if (!this.canViewAllTickets) {
-                    visibleTickets = tickets.filter(t => t.assignee === this.currentUser);
-                }
-                this.tickets = [...visibleTickets].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-            })
-        );
-    }
+    this.sub.add(
+      this.ticketsMock.getByGroup(this.currentGroupId).subscribe((tickets) => {
+        let visibleTickets = tickets;
+        if (!this.canViewAllTickets) {
+          visibleTickets = tickets.filter(t => t.assignee === this.currentUser);
+        }
+        this.tickets = [...visibleTickets].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      })
+    );
+  }
 
     ngOnDestroy(): void {
         this.sub.unsubscribe();

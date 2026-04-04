@@ -1,34 +1,34 @@
 <!-- ════════════════════════════════════════
      DASHBOARD DEL GRUPO
 ════════════════════════════════════════ -->
-<div class="db-wrapper">
+<div class="flex flex-column gap-4 w-full max-w-screen-xl mx-auto">
 
   <!-- ── HEADER ────────────────────────── -->
-  <header class="db-header">
-    <div class="db-header-left">
+  <header class="flex align-items-center justify-content-between gap-3 flex-wrap surface-0 border-1 surface-border border-round-xl p-3 shadow-1">
+    <div class="flex align-items-center gap-3">
       <a pButton text severity="secondary" icon="pi pi-arrow-left" size="small"
          [routerLink]="['/pages/auth/group-selection']"
          pTooltip="Cambiar de grupo" tooltipPosition="right"></a>
 
-      <div class="db-group-badge">
-        <i class="pi pi-users"></i>
-      </div>
+      <p-avatar icon="pi pi-users" size="large" shape="circle"
+                [style]="{'background': 'linear-gradient(135deg, #4f46e5, #7c3aed)', 'color': '#ffffff', 'box-shadow': '0 4px 12px rgba(79, 70, 229, 0.3)'}"></p-avatar>
 
-      <div class="db-header-info">
-        <div class="db-breadcrumb">
-          <span class="db-breadcrumb-sep">Mis grupos</span>
-          <i class="pi pi-angle-right db-breadcrumb-sep"></i>
-          <span class="db-group-name">{{ selectedGroupName || selectedGroupId }}</span>
+      <div class="flex flex-column gap-1">
+        <div class="flex align-items-center gap-2 text-sm text-500">
+          <span class="text-500">Mis grupos</span>
+          <i class="pi pi-angle-right text-500"></i>
+          <span class="font-bold text-base text-900">{{ selectedGroupName || selectedGroupId }}</span>
         </div>
-        <p class="db-header-sub">{{ totalTickets }} ticket{{ totalTickets !== 1 ? 's' : '' }} en este espacio</p>
+        <p class="m-0 text-sm text-500">{{ totalTickets }} ticket{{ totalTickets !== 1 ? 's' : '' }} en este espacio</p>
       </div>
     </div>
 
-    <div class="db-header-right">
-      <a pButton severity="secondary" icon="pi pi-table" label="Tablero Kanban"
-         size="small" [routerLink]="['/pages/kanban']"></a>
-      <a pButton severity="secondary" icon="pi pi-list" label="Ver todos"
-         size="small" [routerLink]="['/pages/tickets']"></a>
+    <div class="flex align-items-center gap-3">
+      <div class="flex align-items-center gap-3 surface-50 px-3 py-2 border-round-3xl border-1 surface-border">
+        <span class="text-sm font-semibold transition-colors transition-duration-200" [class.text-900]="!isKanbanView" [class.text-500]="isKanbanView">Vista Tabla</span>
+        <p-toggleswitch [(ngModel)]="isKanbanView" />
+        <span class="text-sm font-semibold transition-colors transition-duration-200" [class.text-900]="isKanbanView" [class.text-500]="!isKanbanView">Vista Kanban</span>
+      </div>
       @if (canCreateTicket) {
         <button pButton icon="pi pi-plus" label="Crear ticket"
                 size="small" (click)="openCreateDialog()"></button>
@@ -37,19 +37,25 @@
   </header>
 
   <!-- ── KPI CARDS ─────────────────────── -->
-  <section class="db-kpi-grid">
+  <section class="grid m-0">
     @for (c of columns; track c.status) {
-      <div class="kpi-card" [style.--accent]="statusAccent(c.status)">
-        <div class="kpi-icon-wrap">
-          <i [class]="statusIcon(c.status)"></i>
-        </div>
-        <div class="kpi-body">
-          <div class="kpi-count">{{ countByStatus(c.status) }}</div>
-          <div class="kpi-label">{{ c.label }}</div>
-        </div>
-        <div class="kpi-bar">
-          <div class="kpi-bar-fill"
-               [style.width.%]="totalTickets ? (countByStatus(c.status) / totalTickets) * 100 : 0">
+      <div class="col-12 md:col-6 lg:col-3 p-2">
+        <div class="relative surface-0 border-1 surface-border border-round-xl p-3 shadow-1 transition-shadow transition-duration-200 hover:shadow-3 flex flex-column gap-3 h-full"
+             [style.border-left]="'4px solid ' + statusAccent(c.status)">
+          <div class="flex align-items-center justify-content-center border-round-lg w-3rem h-3rem"
+               [style.background]="'color-mix(in srgb, ' + statusAccent(c.status) + ' 12%, transparent)'">
+            <i [class]="statusIcon(c.status)" [style.color]="statusAccent(c.status)" class="text-xl"></i>
+          </div>
+          <div class="flex flex-column gap-1">
+            <div class="text-3xl font-bold line-height-1 text-900">{{ countByStatus(c.status) }}</div>
+            <div class="text-sm font-semibold text-500 uppercase tracking-wider">{{ c.label }}</div>
+          </div>
+          <div class="h-1rem border-round-xl surface-200 overflow-hidden mt-auto">
+            <div class="h-full border-round-xl transition-all transition-duration-400"
+                 [style.background]="statusAccent(c.status)"
+                 [style.width.%]="totalTickets ? (countByStatus(c.status) / totalTickets) * 100 : 0"
+                 [style.min-width]="'4px'">
+            </div>
           </div>
         </div>
       </div>
@@ -57,69 +63,70 @@
   </section>
 
   <!-- ── CONTENIDO: MINI-LISTA + KANBAN ── -->
-  <div class="db-content-grid">
+  @if (isKanbanView) {
+  <div class="flex flex-column lg:flex-row gap-4 align-items-start m-0">
 
     <!-- Mini-lista lateral -->
-    <aside class="db-aside">
+    <aside class="w-full lg:w-3 flex flex-column gap-3 p-0">
 
       <!-- Mis tickets -->
-      <div class="aside-section">
-        <div class="aside-section-header">
-          <i class="pi pi-user"></i>
+      <div class="surface-0 border-1 surface-border border-round-xl p-3 shadow-1">
+        <div class="flex align-items-center gap-2 font-bold text-sm text-900 mb-3 pb-2 border-bottom-1 surface-border">
+          <i class="pi pi-user text-indigo-500"></i>
           <span>Mis tickets</span>
           @if (myTickets.length) {
-            <span class="aside-badge">{{ myTickets.length }}</span>
+            <span class="ml-auto bg-indigo-500 text-white text-xs font-bold px-2 py-1 border-round-2xl">{{ myTickets.length }}</span>
           }
         </div>
 
         @if (myTickets.length) {
-          <ul class="mini-list">
+          <ul class="list-none p-0 m-0 flex flex-column gap-2">
             @for (t of myTickets; track t.id) {
-              <li class="mini-item">
-                <div class="mini-item-top">
-                  <span class="mini-title">{{ t.title }}</span>
+              <li class="surface-50 border-1 surface-border border-round-lg p-2 flex flex-column gap-1 transition-colors transition-duration-150 hover:border-indigo-200">
+                <div class="flex align-items-start justify-content-between gap-2">
+                  <span class="text-sm font-semibold text-900 flex-1 white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ t.title }}</span>
                   <p-tag [value]="statusLabel(t.status)" [severity]="statusSeverity(t.status)" />
                 </div>
-                <div class="mini-item-meta">
-                  <i class="pi pi-calendar-clock"></i>
+                <div class="flex align-items-center gap-2 text-xs text-500">
+                  <i class="pi pi-calendar-clock text-xs"></i>
                   <span>{{ formatDate(t.createdAt) }}</span>
                 </div>
               </li>
             }
           </ul>
         } @else {
-          <div class="aside-empty">
-            <i class="pi pi-inbox"></i>
+          <div class="flex align-items-center justify-content-center gap-2 text-sm text-500 py-3">
+            <i class="pi pi-inbox text-base"></i>
             <span>No tienes tickets asignados.</span>
           </div>
         }
       </div>
 
       <!-- Tickets recientes -->
-      <div class="aside-section">
-        <div class="aside-section-header">
-          <i class="pi pi-history"></i>
+      <div class="surface-0 border-1 surface-border border-round-xl p-3 shadow-1">
+        <div class="flex align-items-center gap-2 font-bold text-sm text-900 mb-3 pb-2 border-bottom-1 surface-border">
+          <i class="pi pi-history text-indigo-500"></i>
           <span>Recientes</span>
         </div>
 
         @if (recentTickets.length) {
-          <ul class="mini-list">
+          <ul class="list-none p-0 m-0 flex flex-column gap-2">
             @for (t of recentTickets; track t.id) {
-              <li class="mini-item">
-                <div class="mini-item-top">
-                  <span class="mini-title">{{ t.title }}</span>
+              <li class="surface-50 border-1 surface-border border-round-lg p-2 flex flex-column gap-1 transition-colors transition-duration-150 hover:border-indigo-200">
+                <div class="flex align-items-start justify-content-between gap-2">
+                  <span class="text-sm font-semibold text-900 flex-1 white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ t.title }}</span>
                 </div>
-                <div class="mini-item-meta">
-                  <span class="assignee-chip">{{ assigneeInitial(t.assignee) }}</span>
-                  <span class="muted-text">{{ t.assignee }}</span>
-                  <span class="muted-text ml-auto">{{ formatDate(t.createdAt) }}</span>
+                <div class="flex align-items-center gap-2 text-xs text-500">
+                  <p-avatar [label]="assigneeInitial(t.assignee)" shape="circle" size="normal" [style]="{'background': 'linear-gradient(135deg, #6366f1, #a78bfa)', 'color': '#ffffff', 'width': '1.5rem', 'height': '1.5rem', 'font-size': '0.7rem'}"></p-avatar>
+                  <span class="white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ t.assignee }}</span>
+                  <span class="ml-auto">{{ formatDate(t.createdAt) }}</span>
                 </div>
               </li>
             }
           </ul>
         } @else {
-          <div class="aside-empty">
-            <i class="pi pi-inbox"></i>
+          <div class="flex align-items-center justify-content-center gap-2 text-sm text-500 py-3">
+            <i class="pi pi-inbox text-base"></i>
             <span>Aún no hay tickets.</span>
           </div>
         }
@@ -128,53 +135,59 @@
     </aside>
 
     <!-- Tablero Kanban -->
-    <section class="db-kanban">
+    <section class="w-full lg:w-9 surface-0 border-1 surface-border border-round-xl shadow-1 p-0 flex flex-column">
 
-      <div class="kanban-header-row">
-        <h3 class="kanban-title"><i class="pi pi-table"></i> Tablero Kanban</h3>
-        <span class="kanban-hint">Los tickets se agrupan automáticamente por estado</span>
+      <div class="flex align-items-baseline justify-content-between gap-3 mb-3 flex-wrap p-3 pb-0">
+        <h3 class="m-0 text-base font-bold text-900 flex align-items-center gap-2"><i class="pi pi-table text-indigo-500"></i> Tablero Kanban</h3>
+        <span class="text-sm text-500">Los tickets se agrupan automáticamente por estado</span>
       </div>
 
-      <div class="kanban-board">
+      <div class="flex gap-3 overflow-x-auto pb-3 w-full px-3">
         @for (c of columns; track c.status) {
-          <div class="kanban-col" 
-               [class.drop-active]="dropTargetStatus === c.status"
-               [style.--col-accent]="statusAccent(c.status)"
+          <div class="flex-1 min-w-min border-1 surface-border border-round-xl surface-50 flex flex-column gap-2 overflow-hidden" 
+               [style.border-top]="'3px solid ' + statusAccent(c.status)"
+               [style.min-height]="'16rem'"
+               [style.min-width]="'280px'"
+               [class.bg-indigo-50]="dropTargetStatus === c.status"
                (dragover)="onDragOver($event, c.status)"
                (dragleave)="onDragLeave($event, c.status)"
                (drop)="onDrop($event, c.status)">
 
             <!-- Cabecera de columna -->
-            <div class="kanban-col-head">
-              <div class="kanban-col-title">
-                <i [class]="statusIcon(c.status)"></i>
+            <div class="flex align-items-center justify-content-between gap-2 pt-3 px-3">
+              <div class="flex align-items-center gap-2 font-bold text-sm text-900 uppercase tracking-wider">
+                <i [class]="statusIcon(c.status)" [style.color]="statusAccent(c.status)"></i>
                 <span>{{ c.label }}</span>
               </div>
-              <span class="kanban-col-count">{{ countByStatus(c.status) }}</span>
+              <span class="text-xs font-bold px-2 py-1 border-round-2xl"
+                    [style.background]="'color-mix(in srgb, ' + statusAccent(c.status) + ' 15%, transparent)'"
+                    [style.color]="statusAccent(c.status)">{{ countByStatus(c.status) }}</span>
             </div>
 
             <!-- Cuerpo de columna -->
-            <div class="kanban-col-body">
+            <div class="flex-1 px-3 pb-3 flex flex-column gap-2">
               @for (t of ticketsByStatus(c.status); track t.id) {
-                <div class="ticket-card"
-                     [class.is-dragging]="draggedTicketId === t.id"
+                <div class="surface-0 border-1 surface-border border-round-lg p-3 flex flex-column gap-2 transition-colors transition-shadow transition-duration-150 cursor-pointer hover:shadow-2 hover:border-indigo-200"
+                     [class.opacity-50]="draggedTicketId === t.id"
+                     [class.border-dashed]="draggedTicketId === t.id"
                      [draggable]="true"
                      (dragstart)="onDragStart($event, t)"
-                     (dragend)="onDragEnd()">
-                  <div class="ticket-card-top">
-                    <span class="ticket-title">{{ t.title }}</span>
+                     (dragend)="onDragEnd()"
+                     (click)="openKanbanDetail(t.id)">
+                  <div class="flex align-items-start justify-content-between gap-2">
+                    <span class="text-sm font-semibold text-900 line-height-2 flex-1">{{ t.title }}</span>
                   </div>
-                  <div class="ticket-card-meta">
-                    <span class="assignee-chip">{{ assigneeInitial(t.assignee) }}</span>
-                    <span class="muted-text">{{ t.assignee }}</span>
-                    <span class="muted-text ml-auto">{{ formatDate(t.createdAt) }}</span>
+                  <div class="flex align-items-center gap-2 text-xs text-500 mt-1">
+                    <p-avatar [label]="assigneeInitial(t.assignee)" shape="circle" size="normal" [style]="{'background': 'linear-gradient(135deg, #6366f1, #a78bfa)', 'color': '#ffffff', 'width': '1.5rem', 'height': '1.5rem', 'font-size': '0.7rem'}"></p-avatar>
+                    <span class="white-space-nowrap overflow-hidden text-overflow-ellipsis">{{ t.assignee }}</span>
+                    <span class="ml-auto">{{ formatDate(t.createdAt) }}</span>
                   </div>
                 </div>
               }
 
               @if (!ticketsByStatus(c.status).length) {
-                <div class="kanban-empty">
-                  <i class="pi pi-inbox"></i>
+                <div class="flex flex-column align-items-center justify-content-center gap-2 text-sm text-500 py-4">
+                  <i class="pi pi-inbox text-2xl opacity-50"></i>
                   <span>Sin tickets</span>
                 </div>
               }
@@ -186,6 +199,67 @@
     </section>
 
   </div>
+  } @else {
+  <div class="w-full surface-0 border-1 surface-border border-round-xl p-3 shadow-1">
+    <p-card styleClass="border-none shadow-none">
+      <p-table #dt [value]="tickets" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5, 10, 20]"
+        responsiveLayout="scroll"
+        [globalFilterFields]="['id', 'title', 'status', 'priority', 'assignee']">
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="id">ID / Título <p-sortIcon field="id"></p-sortIcon></th>
+            <th pSortableColumn="status">Estado <p-sortIcon field="status"></p-sortIcon></th>
+            <th pSortableColumn="priority">Prioridad <p-sortIcon field="priority"></p-sortIcon></th>
+            <th pSortableColumn="assignee">Asignado a <p-sortIcon field="assignee"></p-sortIcon></th>
+            <th pSortableColumn="createdAt">Fecha Creación <p-sortIcon field="createdAt"></p-sortIcon></th>
+            <th style="width: 8rem; text-align: center;">Acciones</th>
+          </tr>
+          <tr>
+            <th>
+              <p-columnFilter type="text" field="title" placeholder="Buscar por título" ariaLabel="Filter Título"></p-columnFilter>
+            </th>
+            <th>
+              <p-columnFilter type="text" field="status" placeholder="Buscar por estado" ariaLabel="Filter Estado"></p-columnFilter>
+            </th>
+            <th>
+              <p-columnFilter type="text" field="priority" placeholder="Buscar por prioridad" ariaLabel="Filter Prioridad"></p-columnFilter>
+            </th>
+            <th>
+              <p-columnFilter type="text" field="assignee" placeholder="Buscar por asignado" ariaLabel="Filter Asignado"></p-columnFilter>
+            </th>
+            <th>
+              <p-columnFilter type="text" field="createdAt" placeholder="Buscar por fecha" ariaLabel="Filter Fecha"></p-columnFilter>
+            </th>
+            <th></th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-ticket>
+          <tr>
+            <td>
+              <a class="font-bold text-indigo-500 cursor-pointer hover:underline" (click)="openKanbanDetail(ticket.id)">#{{ ticket.id }}</a> - {{ ticket.title }}
+            </td>
+            <td><p-tag [value]="statusLabel(ticket.status)" [severity]="statusSeverity(ticket.status)" /></td>
+            <td><p-tag [value]="priorityLabel(ticket.priority)" [severity]="prioritySeverity(ticket.priority)" /></td>
+            <td>{{ ticket.assignee }}</td>
+            <td>{{ formatDate(ticket.createdAt) }}</td>
+            <td class="text-center">
+              <button pButton pRipple type="button" icon="pi pi-eye" class="p-button-rounded p-button-text p-button-secondary" 
+                      pTooltip="Ver detalle" tooltipPosition="top"
+                      (click)="openKanbanDetail(ticket.id)"></button>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6" class="text-center p-4 text-500">No hay tickets registrados.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+  </div>
+  }
 </div>
 
 <!-- ════════════════════════════════════════
@@ -200,63 +274,325 @@
   [style]="{ width: '38rem', maxWidth: '95vw' }"
   (onHide)="closeCreateDialog()"
 >
-  <form [formGroup]="createForm" (ngSubmit)="saveCreatedTicket()" class="create-form">
+  <form [formGroup]="createForm" (ngSubmit)="saveCreatedTicket()" class="flex flex-column gap-3 pt-2">
 
-    <div class="cf-field">
-      <label for="ct-title" class="cf-label">
-        <i class="pi pi-tag"></i> Título <span class="cf-required">*</span>
+    <div class="flex flex-column gap-2">
+      <label for="ct-title" class="flex align-items-center gap-2 font-semibold text-sm text-700">
+        <i class="pi pi-tag text-indigo-500 text-sm"></i> Título <span class="text-red-500">*</span>
       </label>
-      <input pInputText id="ct-title" type="text"
+      <input pInputText id="ct-title" type="text" class="w-full"
              formControlName="title" placeholder="Ej: Error al guardar el formulario" />
       @if (createForm.controls.title.invalid &&
           (createForm.controls.title.dirty || createForm.controls.title.touched)) {
-        <small class="cf-error">Título requerido (mínimo 3 caracteres).</small>
+        <small class="text-red-500 text-sm">Título requerido (mínimo 3 caracteres).</small>
       }
     </div>
 
-    <div class="cf-field">
-      <label for="ct-desc" class="cf-label">
-        <i class="pi pi-align-left"></i> Descripción
+    <div class="flex flex-column gap-2">
+      <label for="ct-desc" class="flex align-items-center gap-2 font-semibold text-sm text-700">
+        <i class="pi pi-align-left text-indigo-500 text-sm"></i> Descripción
       </label>
-      <textarea pInputTextarea id="ct-desc" formControlName="description" rows="3"
+      <textarea pInputTextarea id="ct-desc" formControlName="description" rows="3" class="w-full"
                 placeholder="Detalles opcionales..."></textarea>
     </div>
 
-    <div class="cf-two-cols">
-      <div class="cf-field">
-        <label for="ct-status" class="cf-label">
-          <i class="pi pi-flag"></i> Estado <span class="cf-required">*</span>
+    <div class="grid gap-3 m-0">
+      <div class="col p-0 flex flex-column gap-2">
+        <label for="ct-status" class="flex align-items-center gap-2 font-semibold text-sm text-700">
+          <i class="pi pi-flag text-indigo-500 text-sm"></i> Estado <span class="text-red-500">*</span>
         </label>
-        <p-select id="ct-status" [options]="statusOptions"
+        <p-select id="ct-status" [options]="statusOptions" class="w-full" styleClass="w-full"
                   optionLabel="label" optionValue="value"
                   formControlName="status" placeholder="Selecciona estado" />
       </div>
-      <div class="cf-field">
-        <label for="ct-priority" class="cf-label">
-          <i class="pi pi-bolt"></i> Prioridad <span class="cf-required">*</span>
+      <div class="col p-0 flex flex-column gap-2">
+        <label for="ct-priority" class="flex align-items-center gap-2 font-semibold text-sm text-700">
+          <i class="pi pi-bolt text-indigo-500 text-sm"></i> Prioridad <span class="text-red-500">*</span>
         </label>
-        <p-select id="ct-priority" 
+        <p-select id="ct-priority" class="w-full" styleClass="w-full"
                   [options]="[{label: 'Alta', value: 'alta'}, {label: 'Media', value: 'media'}, {label: 'Baja', value: 'baja'}]"
                   optionLabel="label" optionValue="value"
                   formControlName="priority" placeholder="Prioridad" />
       </div>
     </div>
 
-    <div class="cf-two-cols">
-      <div class="cf-field">
-        <label for="ct-assignee" class="cf-label">
-          <i class="pi pi-user"></i> Asignado a
+    <div class="grid gap-3 m-0">
+      <div class="col p-0 flex flex-column gap-2">
+        <label for="ct-assignee" class="flex align-items-center gap-2 font-semibold text-sm text-700">
+          <i class="pi pi-user text-indigo-500 text-sm"></i> Asignado a
         </label>
-        <input pInputText id="ct-assignee" type="text"
+        <input pInputText id="ct-assignee" type="text" class="w-full"
                formControlName="assignee" placeholder="Nombre del responsable (opcional)" />
       </div>
     </div>
 
-    <div class="cf-actions">
+    <div class="flex justify-content-end gap-3 mt-2">
       <button pButton type="button" label="Cancelar" severity="secondary"
               icon="pi pi-times" (click)="closeCreateDialog()"></button>
       <button pButton type="submit" label="Crear ticket" icon="pi pi-check"></button>
     </div>
 
   </form>
+</p-dialog>
+
+<!-- ════════════════════════════════════════
+     DIÁLOGO: DETALLE / EDICIÓN
+════════════════════════════════════════ -->
+<p-dialog
+  [header]="dialogMode === 'edit' ? 'Editar ticket' : 'Detalle del ticket'"
+  [(visible)]="detailDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '60rem', maxWidth: '96vw' }"
+  (onHide)="closeDetailDialog()"
+>
+
+  <!-- ── MODO VER (SPLIT VIEW) ── -->
+  @if (selectedTicket && dialogMode === 'view') {
+    <div class="flex flex-column lg:flex-row gap-4 m-0 pt-2">
+
+      <!-- COLUMNA IZQUIERDA: Info del Ticket -->
+      <div class="flex-1 flex flex-column gap-3 p-0">
+
+        <div class="flex align-items-start gap-2">
+          <div class="w-1rem h-1rem border-circle flex-shrink-0 mt-1" [style.background]="priorityAccent(selectedTicket.priority)"></div>
+          <h3 class="m-0 text-xl font-bold text-900 line-height-3">{{ selectedTicket.title }}</h3>
+        </div>
+
+        <div class="flex align-items-center flex-wrap gap-2">
+          <!-- Si puede editar estado, mostramos un select inline -->
+          @if (canEditStatus) {
+            <p-select
+              [options]="allStatusOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="selectedTicket.status"
+              (ngModelChange)="onInlineStatusChange($event)"
+              styleClass="w-9rem"
+            />
+          } @else {
+            <p-tag [value]="statusLabel(selectedTicket.status)" [severity]="statusSeverity(selectedTicket.status)" />
+          }
+          <p-tag [value]="priorityLabel(selectedTicket.priority)" [severity]="prioritySeverity(selectedTicket.priority)" />
+        </div>
+
+        @if (selectedTicket.description) {
+          <p class="m-0 text-sm line-height-3 surface-50 border-round-lg p-3 border-1 surface-border text-700">{{ selectedTicket.description }}</p>
+        } @else {
+          <p class="m-0 text-sm text-500"><i class="pi pi-minus-circle"></i> Sin descripción.</p>
+        }
+
+        <div class="grid grid-cols-2 gap-3 mt-2 m-0">
+          <div class="col-12 md:col-6 p-0 flex flex-column gap-1">
+            <span class="text-xs font-semibold uppercase tracking-wider text-500"><i class="pi pi-user"></i> Asignado a</span>
+            <div class="text-sm font-medium text-900 flex align-items-center gap-2">
+              <p-avatar [label]="assigneeInitial(selectedTicket.assignee)" shape="circle" size="normal" [style]="{'background': 'linear-gradient(135deg, #6366f1, #a78bfa)', 'color': '#ffffff', 'width': '1.5rem', 'height': '1.5rem', 'font-size': '0.7rem'}"></p-avatar>
+              <strong>{{ selectedTicket.assignee }}</strong>
+            </div>
+          </div>
+          <div class="col-12 md:col-6 p-0 flex flex-column gap-1">
+            <span class="text-xs font-semibold uppercase tracking-wider text-500"><i class="pi pi-user-edit"></i> Creado por</span>
+            <div class="text-sm font-medium text-900 flex align-items-center gap-2">
+              <p-avatar [label]="assigneeInitial(selectedTicket.createdBy)" shape="circle" size="normal" [style]="{'background': 'linear-gradient(135deg, #6366f1, #a78bfa)', 'color': '#ffffff', 'width': '1.5rem', 'height': '1.5rem', 'font-size': '0.7rem'}"></p-avatar>
+              <strong>{{ selectedTicket.createdBy }}</strong>
+            </div>
+          </div>
+          <div class="col-12 md:col-6 p-0 flex flex-column gap-1">
+            <span class="text-xs font-semibold uppercase tracking-wider text-500"><i class="pi pi-calendar-plus"></i> Fecha creación</span>
+            <span class="text-sm font-medium text-900">{{ formatDate(selectedTicket.createdAt) }}</span>
+          </div>
+          @if (selectedTicket.dueDate) {
+            <div class="col-12 md:col-6 p-0 flex flex-column gap-1">
+              <span class="text-xs font-semibold uppercase tracking-wider text-500"><i class="pi pi-calendar"></i> Fecha límite</span>
+              <span class="text-sm font-medium text-900 flex align-items-center gap-2" [class.text-red-500]="isOverdue(selectedTicket.dueDate)">
+                {{ formatDate(selectedTicket.dueDate) }}
+                @if (isOverdue(selectedTicket.dueDate)) {
+                  <span class="text-xs bg-red-50 text-red-500 border-round-md px-2 py-1">Vencido</span>
+                }
+              </span>
+            </div>
+          }
+        </div>
+
+        <!-- Acciones del pie -->
+        <div class="flex align-items-center gap-2 flex-wrap pt-3 border-top-1 surface-border mt-auto">
+          @if (canDelete()) {
+            @if (!confirmingDelete) {
+              <button pButton type="button" severity="danger" text
+                      icon="pi pi-trash" label="Eliminar"
+                      (click)="confirmingDelete = true"></button>
+            } @else {
+              <div class="flex align-items-center gap-2 flex-wrap text-sm text-red-500">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>¿Eliminar?</span>
+                <button pButton type="button" severity="danger" size="small"
+                        label="Sí" (click)="deleteTicket()"></button>
+                <button pButton type="button" severity="secondary" size="small"
+                        label="No" (click)="confirmingDelete = false"></button>
+              </div>
+            }
+          }
+
+          <div class="flex gap-2 ml-auto">
+            @if (canEditAll) {
+              <button pButton type="button" severity="secondary" label="Editar ticket"
+                      icon="pi pi-pencil" (click)="switchToEditMode()"></button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: Actividad (Tabs) -->
+      <div class="w-full lg:w-5 flex flex-column surface-50 border-round-xl border-1 surface-border overflow-hidden p-0">
+        <div class="flex border-bottom-1 surface-border surface-0">
+          <button class="flex-1 p-3 border-none bg-transparent cursor-pointer text-sm font-semibold transition-all transition-duration-150 border-bottom-2"
+                  [class.text-indigo-500]="activeTab === 'comments'" [class.border-indigo-500]="activeTab === 'comments'"
+                  [class.text-500]="activeTab !== 'comments'" [class.border-transparent]="activeTab !== 'comments'"
+                  (click)="activeTab = 'comments'">
+            <i class="pi pi-comments"></i> Comentarios ({{ selectedTicket.comments.length }})
+          </button>
+          <button class="flex-1 p-3 border-none bg-transparent cursor-pointer text-sm font-semibold transition-all transition-duration-150 border-bottom-2"
+                  [class.text-indigo-500]="activeTab === 'history'" [class.border-indigo-500]="activeTab === 'history'"
+                  [class.text-500]="activeTab !== 'history'" [class.border-transparent]="activeTab !== 'history'"
+                  (click)="activeTab = 'history'">
+            <i class="pi pi-history"></i> Historial
+          </button>
+        </div>
+
+        <div class="flex-1 flex flex-column p-3 overflow-y-auto" style="max-height: 400px;">
+          <!-- TAPA COMENTARIOS -->
+          @if (activeTab === 'comments') {
+            <div class="flex flex-column gap-3 flex-1">
+              @for (c of selectedTicket.comments; track c.id) {
+                <div class="flex gap-2">
+                  <p-avatar [label]="assigneeInitial(c.author)" shape="circle" size="normal" [style]="{'background': 'linear-gradient(135deg, #6366f1, #a78bfa)', 'color': '#ffffff', 'width': '1.8rem', 'height': '1.8rem', 'font-size': '0.75rem'}"></p-avatar>
+                  <div class="surface-0 border-1 surface-border border-round-lg p-2 flex-1">
+                    <div class="flex justify-content-between align-items-center mb-1 text-xs">
+                      <strong class="text-900">{{ c.author }}</strong>
+                      <span class="text-500">{{ formatDateTime(c.createdAt) }}</span>
+                    </div>
+                    <div class="text-sm text-700 line-height-3 white-space-pre-wrap">{{ c.text }}</div>
+                  </div>
+                </div>
+              }
+              @if (!selectedTicket.comments.length) {
+                <div class="text-center text-500 py-4 text-sm">
+                  <i class="pi pi-comment text-2xl mb-2 opacity-50 block"></i>
+                  <p class="m-0">No hay comentarios aún.</p>
+                </div>
+              }
+            </div>
+
+            @if (canComment) {
+              <div class="mt-3 flex flex-column gap-2">
+                <textarea pInputTextarea [(ngModel)]="newCommentText" rows="2" class="w-full"
+                          placeholder="Escribe un comentario..." autoResize="true"></textarea>
+                <div class="flex justify-content-end">
+                  <button pButton type="button" label="Comentar" size="small"
+                          icon="pi pi-send" [disabled]="!newCommentText.trim()"
+                          (click)="postComment()"></button>
+                </div>
+              </div>
+            }
+          }
+
+          <!-- TAPA HISTORIAL -->
+          @if (activeTab === 'history') {
+            <div class="flex flex-column gap-3 relative pl-2">
+              <div class="absolute surface-200" style="left: 11px; top: 5px; bottom: 5px; width: 2px;"></div>
+              @for (h of selectedTicket.history; track h.id) {
+                <div class="flex gap-3 relative">
+                  <div class="w-1rem h-1rem border-circle bg-purple-400 border-2 surface-50 z-1 mt-1" style="margin-left: 2px;"></div>
+                  <div class="flex-1">
+                    <div class="text-sm text-700 line-height-3">
+                      <strong class="text-900">{{ h.author }}</strong> {{ h.action }}
+                    </div>
+                    <div class="text-xs text-500 mt-1">{{ formatDateTime(h.createdAt) }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+  }
+
+  <!-- ── MODO EDITAR ── -->
+  @if (selectedTicket && dialogMode === 'edit') {
+    <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="flex flex-column gap-3 pt-2">
+
+      <div class="flex flex-column gap-2">
+        <label class="flex align-items-center gap-2 font-semibold text-sm text-700">
+          <i class="pi pi-tag text-indigo-500 text-sm"></i> Título <span class="text-red-500">*</span>
+        </label>
+        <input pInputText formControlName="title" placeholder="Título del ticket" class="w-full" />
+        @if (formControlError('edit', 'title')) {
+          <small class="text-red-500 text-sm">Título requerido (mín. 3 caracteres).</small>
+        }
+      </div>
+
+      <div class="flex flex-column gap-2">
+        <label class="flex align-items-center gap-2 font-semibold text-sm text-700"><i class="pi pi-align-left text-indigo-500 text-sm"></i> Descripción</label>
+        <textarea pInputTextarea formControlName="description" rows="3" class="w-full"
+                  placeholder="Describe el problema o tarea…" autoResize="true"></textarea>
+      </div>
+
+      <div class="grid gap-3 m-0">
+        <div class="col p-0 flex flex-column gap-2">
+          <label class="flex align-items-center gap-2 font-semibold text-sm text-700">
+            <i class="pi pi-flag text-indigo-500 text-sm"></i> Estado <span class="text-red-500">*</span>
+          </label>
+          <p-select [options]="allStatusOptions" optionLabel="label" optionValue="value"
+                    formControlName="status" placeholder="Estado" class="w-full" styleClass="w-full" />
+        </div>
+        <div class="col p-0 flex flex-column gap-2">
+          <label class="flex align-items-center gap-2 font-semibold text-sm text-700">
+            <i class="pi pi-bolt text-indigo-500 text-sm"></i> Prioridad <span class="text-red-500">*</span>
+          </label>
+          <p-select [options]="priorityOptions" optionLabel="label" optionValue="value"
+                    formControlName="priority" placeholder="Prioridad" class="w-full" styleClass="w-full" />
+        </div>
+      </div>
+
+      <div class="grid gap-3 m-0">
+        <div class="col p-0 flex flex-column gap-2">
+          <label class="flex align-items-center gap-2 font-semibold text-sm text-700">
+            <i class="pi pi-user text-indigo-500 text-sm"></i> Asignado a <span class="text-red-500">*</span>
+          </label>
+          <input pInputText formControlName="assignee" placeholder="Responsable" [readonly]="!canViewAllTickets" class="w-full" />
+          @if (formControlError('edit', 'assignee')) {
+            <small class="text-red-500 text-sm">Campo requerido (mín. 2 caracteres).</small>
+          }
+        </div>
+      </div>
+      <div class="grid gap-3 m-0">
+        <div class="col p-0 flex flex-column gap-2">
+          <label class="flex align-items-center gap-2 font-semibold text-sm text-700">
+            <i class="pi pi-calendar-plus text-indigo-500 text-sm"></i> Fecha de creación <span class="text-red-500">*</span>
+          </label>
+          <input type="date" formControlName="createdAt" class="w-full p-2 border-1 surface-border border-round-md font-family-inherit text-sm surface-0 outline-none focus:border-indigo-500" />
+          @if (formControlError('edit', 'createdAt')) {
+            <small class="text-red-500 text-sm">Fecha de creación requerida.</small>
+          }
+        </div>
+        <div class="col p-0 flex flex-column gap-2">
+          <label class="flex align-items-center gap-2 font-semibold text-sm text-700">
+            <i class="pi pi-calendar text-indigo-500 text-sm"></i> Fecha límite
+          </label>
+          <input type="date" formControlName="dueDate" class="w-full p-2 border-1 surface-border border-round-md font-family-inherit text-sm surface-0 outline-none focus:border-indigo-500" />
+        </div>
+      </div>
+
+      <div class="flex justify-content-end gap-3 mt-2">
+        <button pButton type="button" severity="secondary" label="Cancelar"
+                (click)="dialogMode = 'view'"></button>
+        <button pButton type="submit" label="Guardar cambios" icon="pi pi-check"></button>
+      </div>
+
+    </form>
+  }
+
 </p-dialog>

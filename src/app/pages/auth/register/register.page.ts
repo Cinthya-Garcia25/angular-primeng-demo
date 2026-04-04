@@ -19,15 +19,7 @@ import { MessageModule } from 'primeng/message';
 import { PasswordModule } from 'primeng/password';
 import { ToastModule } from 'primeng/toast';
 
-import { Permission } from '../../../models/permissions.model';
-
-interface RegisteredUser {
-  username: string;
-  email: string;
-  password: string;
-  isActive?: boolean;
-  permissions?: Permission[];
-}
+import { AuthService } from '../../../services/auth.service';
 
 const SPECIAL_CHARACTERS = '!@#$%^&*';
 const PASSWORD_PATTERN = new RegExp(
@@ -35,7 +27,6 @@ const PASSWORD_PATTERN = new RegExp(
 );
 const PHONE_PATTERN = /^\d{10}$/;
 const NO_WHITESPACE_PATTERN = /^\S+$/;
-const REGISTERED_USERS_KEY = 'registeredUsers';
 
 function passwordsMatchValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -68,6 +59,9 @@ export class RegisterPageComponent {
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly authService = inject(AuthService);
+
+  loading = false;
 
   readonly registerForm = this.fb.group(
     {
@@ -110,30 +104,6 @@ export class RegisterPageComponent {
     });
   }
 
-  private getStoredUsers(): RegisteredUser[] {
-    const rawUsers = localStorage.getItem(REGISTERED_USERS_KEY);
-    if (!rawUsers) {
-      return [];
-    }
-
-    try {
-      const parsedUsers = JSON.parse(rawUsers);
-      if (!Array.isArray(parsedUsers)) {
-        return [];
-      }
-
-      return parsedUsers.filter(
-        (user): user is RegisteredUser =>
-          typeof user?.username === 'string' &&
-          typeof user?.email === 'string' &&
-          typeof user?.password === 'string' &&
-          (typeof user?.isActive === 'boolean' || typeof user?.isActive === 'undefined')
-      );
-    } catch {
-      return [];
-    }
-  }
-
   submitRegister(): void {
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
@@ -145,43 +115,33 @@ export class RegisterPageComponent {
       return;
     }
 
-    const username = this.registerForm.controls.username.value?.trim().toLowerCase() ?? '';
-    const email = this.registerForm.controls.email.value?.trim().toLowerCase() ?? '';
-    const password = this.registerForm.controls.password.value ?? '';
+    this.loading = true;
 
-    const storedUsers = this.getStoredUsers();
-    const existsUser = storedUsers.some((user) => user.username === username || user.email === email);
+    const { username, email, password, fullName, phone, address } = this.registerForm.value;
 
-    if (existsUser) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Usuario existente',
-        detail: 'El usuario o correo ya esta registrado.'
-      });
-      return;
-    }
-
-    const nextUsers: RegisteredUser[] = [...storedUsers, { 
-      username, 
-      email, 
-      password, 
-      isActive: true,
-      permissions: [
-        Permission.GROUP_VIEW,
-        Permission.TICKET_VIEW,
-        Permission.TICKET_EDIT_STATE,
-        Permission.USER_VIEW,
-        Permission.USER_EDIT
-      ]
-    }];
-    localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(nextUsers));
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Registro exitoso',
-      detail: 'Cuenta creada correctamente. Ya puedes iniciar sesion.'
+    this.authService.register({
+      username: username!.trim().toLowerCase(),
+      email: email!.trim().toLowerCase(),
+      password: password!,
+      nombre_completo: fullName ?? undefined,
+      telefono: phone ?? undefined,
+      direccion: address ?? undefined
+    }).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Registro exitoso',
+          detail: 'Cuenta creada correctamente. Ya puedes iniciar sesion.'
+        });
+        this.registerForm.reset({ isAdult: false });
+        setTimeout(() => this.router.navigate(['/pages/auth/login']), 1500);
+      },
+      error: (err) => {
+        const msg = err.error?.error ?? 'Error al registrar. Intenta de nuevo.';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+        this.loading = false;
+      },
+      complete: () => { this.loading = false; }
     });
-    this.registerForm.reset({ isAdult: false });
-    this.router.navigate(['/pages/auth/login']);
   }
 }

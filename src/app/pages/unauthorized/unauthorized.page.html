@@ -1,0 +1,22 @@
+<div class="unauthorized-wrapper">
+  <p-card class="unauthorized-card">
+    <ng-template pTemplate="header">
+      <div class="unauthorized-header">
+        <span class="title">Acceso denegado</span>
+      </div>
+    </ng-template>
+
+    <div class="unauthorized-body">
+      <p>No tienes permisos para realizar esta acción o acceder a esta página.</p>
+      <p class="hint">Si crees que es un error, contacta con un administrador.</p>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="unauthorized-footer">
+        <button pButton type="button" label="Volver al inicio" (click)="goHome()"></button>
+      </div>
+    </ng-template>
+  </p-card>
+</div>
+
+

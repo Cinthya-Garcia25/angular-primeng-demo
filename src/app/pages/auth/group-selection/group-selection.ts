@@ -1,9 +1,10 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { CommonModule } from '@angular/common';
 import { PermissionsService } from '../../../services/permissions.service';
+import { AuthService } from '../../../services/auth.service';
 import { Permission } from '../../../models/permissions.model';
 
 export interface UserGroup {
@@ -15,13 +16,14 @@ export interface UserGroup {
 @Component({
   selector: 'app-group-selection',
   standalone: true,
-  imports: [CommonModule, CardModule, ButtonModule, RouterLink],
+  imports: [CommonModule, CardModule, ButtonModule],
   templateUrl: './group-selection.html',
   styleUrl: './group-selection.css'
 })
 export class GroupSelection implements OnInit {
   private readonly router = inject(Router);
   private readonly permissionsService = inject(PermissionsService);
+  private readonly authService = inject(AuthService);
 
   groups: UserGroup[] = [];
   username = '';
@@ -58,13 +60,9 @@ export class GroupSelection implements OnInit {
             name: g.name
           }));
 
-          if (canViewAllGroups) {
-            this.groups = allGroups;
-          } else {
-            this.groups = allGroups.filter(g => 
-              userAssignedGroups.some(ug => ug.name === g.name || ug.id === g.id)
-            );
-          }
+          this.groups = allGroups.filter(g => 
+            userAssignedGroups.some(ug => ug.name === g.name || ug.id === g.id)
+          );
         }
       } catch {
         this.loadDefaultGroups(canViewAllGroups, userAssignedGroups);
@@ -85,13 +83,9 @@ export class GroupSelection implements OnInit {
       { id: '7', name: 'Quality Assurance' }
     ];
     
-    if (canViewAllGroups) {
-      this.groups = defaultGroups;
-    } else {
-      this.groups = defaultGroups.filter(g => 
-        userAssignedGroups.some(ug => ug.name === g.name || ug.id === g.id)
-      );
-    }
+    this.groups = defaultGroups.filter(g => 
+      userAssignedGroups.some(ug => ug.name === g.name || ug.id === g.id)
+    );
   }
 
   selectGroup(group: UserGroup): void {
@@ -112,15 +106,14 @@ export class GroupSelection implements OnInit {
     return colors[index];
   }
 
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/pages/auth/login']);
+  }
+
   private navigateToDashboard(): void {
-    if (this.permissionsService.hasPermission(Permission.TICKET_VIEW)) {
-      this.router.navigate(['/pages/group-dashboard']);
-      return;
-    }
-    if (this.permissionsService.hasPermission(Permission.USERS_VIEW)) {
-      this.router.navigate(['/pages/home']);
-      return;
-    }
-    this.router.navigate(['/pages/tickets']);
+    // Siempre llevamos al usuario al dashboard del grupo.
+    // Los permisos internos del dashboard se encargan de decidir si puede ver tickets o no.
+    this.router.navigate(['/pages/group-dashboard']);
   }
 }

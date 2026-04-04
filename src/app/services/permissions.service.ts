@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class PermissionsService {
@@ -41,4 +41,22 @@ export class PermissionsService {
         this.userPermissions.set([]);
         sessionStorage.removeItem('userPermissions');
     }
+
+    readonly canViewDashboard = computed(() => true);
+
+    readonly canViewGroups = computed(() =>
+        this.hasAnyPermission(['group:edit', 'group:add', 'group:delete'])
+    );
+
+    readonly canViewGroupSettings = computed(() =>
+        this.hasPermission('group:edit')
+    );
+
+    readonly canViewUserManagement = computed(() =>
+        this.hasAnyPermission(['users:view', 'user:add', 'user:delete'])
+    );
+
+    readonly canViewTickets = computed(() =>
+        this.hasAnyPermission(['ticket:view', 'tickets:view', 'ticket:edit', 'ticket:delete', 'ticket:edit_state'])
+    );
 }

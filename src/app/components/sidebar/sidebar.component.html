@@ -7,53 +7,61 @@
   </div>
 
   <nav class="sidebar-nav">
-    <a *ifHasPermission="'ticket:view'" pButton class="p-button-text p-button-secondary nav-item"
+    <!-- Dashboard: siempre visible, no requiere permisos -->
+    @if (canViewDashboard()) {
+    <a pButton class="p-button-text p-button-secondary nav-item"
       [routerLink]="['/pages/group-dashboard']" routerLinkActive="active-link">
       <i class="pi pi-home"></i>
       @if (!collapsed) {
       <span>Dashboard</span>
       }
     </a>
+    }
 
-    <a *ifHasPermission="'ticket:view'" pButton class="p-button-text p-button-secondary nav-item"
-      [routerLink]="['/pages/kanban']" routerLinkActive="active-link">
-      <i class="pi pi-table"></i>
-      @if (!collapsed) {
-      <span>Tablero Kanban</span>
-      }
-    </a>
-
-    <a *ifHasPermission="'group:view'" pButton class="p-button-text p-button-secondary nav-item"
+    <!-- Groups: requiere al menos uno de: group:edit, group:add, group:delete -->
+    @if (canViewGroups()) {
+    <a pButton class="p-button-text p-button-secondary nav-item"
       [routerLink]="['/pages/groups']" routerLinkActive="active-link">
       <i class="pi pi-users"></i>
       @if (!collapsed) {
       <span>Groups</span>
       }
     </a>
+    }
 
-    <a *ifHasPermission="'group:edit'" pButton class="p-button-text p-button-secondary nav-item"
+    <!-- Group Settings: requiere exactamente group:edit -->
+    @if (canViewGroupSettings()) {
+    <a pButton class="p-button-text p-button-secondary nav-item"
       [routerLink]="['/pages/group-settings']" routerLinkActive="active-link">
       <i class="pi pi-cog"></i>
       @if (!collapsed) {
       <span>Group Settings</span>
       }
     </a>
+    }
 
-    <a *ifHasPermission="'users:view'" pButton class="p-button-text p-button-secondary nav-item"
+    <!-- User Management: requiere al menos uno de: users:view, user:edit, user:add, user:delete -->
+    @if (canViewUserManagement()) {
+    <a pButton class="p-button-text p-button-secondary nav-item"
       [routerLink]="['/pages/user-management']" routerLinkActive="active-link">
       <i class="pi pi-id-card"></i>
       @if (!collapsed) {
       <span>User Management</span>
       }
     </a>
+    }
 
-    <a *ifHasPermission="'ticket:view'" pButton class="p-button-text p-button-secondary nav-item"
+    <!-- Tickets: requiere al menos uno de: tickets:view, ticket:edit, ticket:delete, ticket:edit_state -->
+    @if (canViewTickets()) {
+    <a pButton class="p-button-text p-button-secondary nav-item"
       [routerLink]="['/pages/tickets']" routerLinkActive="active-link">
-      <i class="pi pi-list"></i>
+      <i class="pi pi-ticket"></i>
       @if (!collapsed) {
-      <span>Tickets List</span>
+      <span>Tickets</span>
       }
     </a>
+    }
+
   </nav>
 
   <div class="sidebar-version">

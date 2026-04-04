@@ -1,0 +1,41 @@
+.unauthorized-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+}
+
+.unauthorized-card {
+  max-width: 480px;
+  width: 100%;
+}
+
+.unauthorized-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.unauthorized-header .title {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.unauthorized-body {
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.unauthorized-body .hint {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.unauthorized-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+

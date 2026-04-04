@@ -22,23 +22,23 @@
           <td><strong>{{ user.username }}</strong></td>
           <td>{{ user.email }}</td>
           <td>
-            <span class="status-badge" [class.inactive]="!user.isActive">
-              {{ user.isActive ? 'Activo' : 'Inactivo' }}
+            <span class="status-badge" [class.inactive]="!user.is_active">
+              {{ user.is_active ? 'Activo' : 'Inactivo' }}
             </span>
           </td>
-          <td>
-            <div class="permissions-list">
-              @for (perm of user.permissions; track perm) {
-                <span class="perm-chip">{{ perm }}</span>
-              }
-              @if (!user.permissions?.length) {
-                <span class="text-muted">Sin permisos</span>
-              }
-            </div>
-          </td>
+            <td>
+              <div class="permissions-list">
+                @for (perm of user.permisos_globales; track perm) {
+                  <span class="perm-chip">{{ getPermissionLabel(perm) }}</span>
+                }
+                @if (!user.permisos_globales?.length) {
+                  <span class="text-muted">Sin permisos</span>
+                }
+              </div>
+            </td>
           <td>
             <div class="action-buttons">
-              <button *ifHasPermission="'user:edit'" pButton type="button" icon="pi pi-pencil" severity="secondary" text (click)="openEditDialog(user)" [disabled]="user.username === 'superadmin' && !isEditing"></button>
+              <button *ifHasPermission="'user:edit'" pButton type="button" icon="pi pi-pencil" severity="secondary" text (click)="openEditDialog(user)" [disabled]="false"></button>
               <button *ifHasPermission="'user:delete'" pButton type="button" icon="pi pi-trash" severity="danger" text (click)="deleteUser(user)" [disabled]="user.username === 'superadmin'"></button>
             </div>
           </td>
@@ -91,28 +91,40 @@
         </div>
         
         <div class="field-checkbox">
-          <p-checkbox inputId="isActive" formControlName="isActive" [binary]="true"></p-checkbox>
-          <label for="isActive">Usuario Activo</label>
+          <p-checkbox inputId="is_active" formControlName="is_active" [binary]="true"></p-checkbox>
+          <label for="is_active">Usuario Activo</label>
+        </div>
+
+        <div class="field">
+          <label>Grupos asignados</label>
+          <p-multiSelect
+            formControlName="group_ids"
+            [options]="availableGroups"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Seleccionar grupos"
+            styleClass="w-full">
+          </p-multiSelect>
         </div>
       </div>
       
       <!-- Columna Derecha: Permisos -->
       <div class="permissions-col">
         <h3 class="section-title">Permisos del Sistema</h3>
-        <div class="permissions-grid">
-          @for (perm of allPermissions; track perm) {
-            <div class="perm-item">
-              <p-checkbox 
-                [inputId]="'perm_' + perm" 
-                [binary]="true"
-                [ngModel]="hasPermissionSelected(perm)"
-                (ngModelChange)="togglePermission(perm)"
-                [ngModelOptions]="{standalone: true}">
-              </p-checkbox>
-              <label [for]="'perm_' + perm">{{ perm }}</label>
-            </div>
-          }
-        </div>
+          <div class="permissions-grid">
+            @for (perm of allPermissions; track perm) {
+              <div class="perm-item">
+                <p-checkbox 
+                  [inputId]="'perm_' + perm" 
+                  [binary]="true"
+                  [ngModel]="hasPermissionSelected(perm)"
+                  (ngModelChange)="togglePermission(perm)"
+                  [ngModelOptions]="{standalone: true}">
+                </p-checkbox>
+                <label [for]="'perm_' + perm">{{ getPermissionLabel(perm) }}</label>
+              </div>
+            }
+          </div>
       </div>
     </div>
     

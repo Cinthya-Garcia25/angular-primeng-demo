@@ -38,7 +38,11 @@
             <span class="metric-cell"><i class="pi pi-users"></i>{{ group.members }}</span>
           </td>
           <td>
-            <span class="metric-cell"><i class="pi pi-ticket"></i>{{ group.tickets }}</span>
+            <span class="metric-cell" style="cursor: pointer; color: var(--primary-color); transition: color 0.2s;" 
+                  (click)="enterGroup(group)" 
+                  pTooltip="Ver tickets del grupo" tooltipPosition="top">
+              <i class="pi pi-ticket"></i>{{ group.tickets }}
+            </span>
           </td>
           <td>{{ group.description }}</td>
           <td class="actions-col">
