@@ -1,0 +1,48 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+/* Contiene el ancho del tablero Kanban sin bloquear drag & drop */
+:host ::ng-deep .kanban-section {
+  min-width: 0;
+}
+
+/* Tarjeta Kanban */
+:host ::ng-deep .kanban-card {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  overflow: hidden;
+}
+
+:host ::ng-deep .kanban-card:active {
+  cursor: grabbing;
+}
+
+/* Franja de prioridad izquierda */
+:host ::ng-deep .kanban-priority-stripe {
+  width: 4px;
+  flex-shrink: 0;
+}
+
+/* ── PrimeNG overrides ── */
+:host ::ng-deep .p-inputtext {
+  width: 100%;
+}
+
+:host ::ng-deep .p-select {
+  width: 100%;
+}
+
+:host ::ng-deep .p-textarea {
+  width: 100%;
+}
+
+:host ::ng-deep .p-dialog-header {
+  border-bottom: 1px solid var(--p-surface-100);
+}
+
+:host ::ng-deep .p-dialog-content {
+  padding: 1.5rem !important;
+}

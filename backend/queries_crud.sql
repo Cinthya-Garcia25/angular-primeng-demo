@@ -218,6 +218,36 @@ WHERE id = 'UUID_DEL_TICKET';
 -- PERMISSIONS (permisos) — solo lectura
 
 
+-- CREATE — Registrar todos los permisos del sistema
+-- Ejecutar una sola vez al inicializar la base de datos
+INSERT INTO permisos (codigo, nombre, descripcion) VALUES
+    -- Ticket
+    ('ticket:add',              'Crear ticket',               'Permite crear nuevos tickets'),
+    ('ticket:view',             'Ver tickets',                'Permite ver tickets existentes'),
+    ('ticket:edit',             'Editar ticket',              'Permite editar datos generales del ticket'),
+    ('ticket:edit:state',       'Cambiar estado',             'Permite cambiar el estado de un ticket'),
+    ('ticket:edit:comment',     'Comentar ticket',            'Permite agregar comentarios a un ticket'),
+    ('ticket:edit:priority',    'Cambiar prioridad',          'Permite cambiar la prioridad de un ticket'),
+    ('ticket:edit:deadline',    'Cambiar fecha límite',       'Permite modificar la fecha de entrega de un ticket'),
+    ('ticket:edit:assign',      'Asignar ticket',             'Permite asignar un ticket a un usuario'),
+    ('ticket:edit:delete',      'Eliminar ticket',            'Permite eliminar un ticket'),
+    -- Group
+    ('group:add',               'Crear grupo',                'Permite crear nuevos grupos'),
+    ('group:view',              'Ver grupos',                 'Permite ver grupos existentes'),
+    ('group:edit',              'Editar grupo',               'Permite editar datos del grupo'),
+    ('group:remove',            'Eliminar grupo',             'Permite eliminar un grupo'),
+    ('group:add:member',        'Agregar miembro',            'Permite agregar miembros a un grupo'),
+    ('group:remove:member',     'Quitar miembro',             'Permite quitar miembros de un grupo'),
+    -- User
+    ('user:add',                'Crear usuario',              'Permite registrar nuevos usuarios'),
+    ('user:view:all',           'Ver todos los usuarios',     'Permite listar todos los usuarios del sistema'),
+    ('user:edit',               'Editar usuario',             'Permite editar datos de un usuario'),
+    ('user:remove',             'Eliminar usuario',           'Permite eliminar un usuario'),
+    ('user:edit:permission',    'Editar permisos',            'Permite modificar los permisos de un usuario'),
+    ('user:deactivated',        'Desactivar usuario',         'Permite desactivar la cuenta de un usuario'),
+    ('user:activated',          'Activar usuario',            'Permite activar la cuenta de un usuario')
+ON CONFLICT (codigo) DO NOTHING;
+
 -- READ — Listar todos los permisos disponibles
 -- Usado para poblar los checkboxes en el diálogo de edición de usuario (User Management)
 SELECT id, codigo, nombre, descripcion

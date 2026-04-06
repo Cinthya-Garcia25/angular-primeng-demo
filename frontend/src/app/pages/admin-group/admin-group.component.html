@@ -1,0 +1,252 @@
+<p-toast />
+
+<!-- ═══════════════════ TOOLBAR ═══════════════════ -->
+<div class="ag-page">
+  <div class="ag-header">
+    <div>
+      <h2 class="ag-title">Administración de Grupos</h2>
+      <p class="ag-subtitle">Gestiona grupos, miembros y permisos por grupo</p>
+    </div>
+    <button *ifHasPermission="'group:add'" pButton icon="pi pi-plus" label="Nuevo Grupo"
+            (click)="openCreateGroup()"></button>
+  </div>
+
+  <!-- ═══════════════════ TABLA DE GRUPOS ═══════════════════ -->
+  <p-card styleClass="ag-card">
+    <div class="ag-search-row">
+      <p-iconfield>
+        <p-inputicon styleClass="pi pi-search" />
+        <input pInputText type="text" placeholder="Buscar grupo…" [(ngModel)]="searchValue" />
+      </p-iconfield>
+      <span class="ag-count">{{ filteredGroups.length }} grupo(s)</span>
+    </div>
+
+    <p-table [value]="filteredGroups" [loading]="loading" responsiveLayout="scroll"
+             [paginator]="true" [rows]="8" [rowsPerPageOptions]="[8,15,30]">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Creado</th>
+          <th class="ag-actions-col">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-group>
+        <tr>
+          <td>
+            <div class="ag-group-name">
+              <p-avatar [label]="initial(group.nombre)" shape="circle" styleClass="ag-group-avatar" />
+              <strong>{{ group.nombre }}</strong>
+            </div>
+          </td>
+          <td class="ag-desc">{{ group.descripcion || '—' }}</td>
+          <td>{{ formatDate(group.creado_en) }}</td>
+          <td class="ag-actions-col">
+            <button pButton type="button" icon="pi pi-users" severity="info" text
+                    pTooltip="Gestionar miembros" tooltipPosition="top"
+                    (click)="openMembersDialog(group)"></button>
+            <button *ifHasPermission="'group:edit'" pButton type="button" icon="pi pi-pencil"
+                    severity="secondary" text pTooltip="Editar grupo" tooltipPosition="top"
+                    (click)="openEditGroup(group)"></button>
+            <button *ifHasPermission="'group:delete'" pButton type="button" icon="pi pi-trash"
+                    severity="danger" text pTooltip="Eliminar grupo" tooltipPosition="top"
+                    (click)="askDeleteGroup(group)"></button>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="4" class="ag-empty">No hay grupos registrados.</td></tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</div>
+
+
+<!-- ═══════════════════ DIALOG: CREAR / EDITAR GRUPO ═══════════════════ -->
+<p-dialog [header]="isEditingGroup ? 'Editar Grupo' : 'Nuevo Grupo'"
+          [(visible)]="groupDialogVisible" [modal]="true"
+          [style]="{ width: '34rem', maxWidth: '95vw' }"
+          [draggable]="false" [resizable]="false">
+  <form [formGroup]="groupForm" (ngSubmit)="saveGroup()" class="flex flex-column gap-3 pt-1">
+
+    <div class="flex flex-column gap-1">
+      <label class="ag-label">Nombre <span class="ag-req">*</span></label>
+      <input pInputText formControlName="name" placeholder="Nombre del grupo" />
+      @if (controlHasError('name')) {
+        <small class="p-error">Nombre requerido (mín. 3 caracteres).</small>
+      }
+    </div>
+
+    <div class="flex flex-column gap-1">
+      <label class="ag-label">Descripción</label>
+      <textarea pInputTextarea formControlName="description" rows="3"
+                placeholder="Descripción opcional del grupo" autoResize="true"></textarea>
+    </div>
+
+    <div class="flex justify-content-end gap-2 mt-1">
+      <button pButton type="button" severity="secondary" label="Cancelar"
+              icon="pi pi-times" (click)="groupDialogVisible = false"></button>
+      <button pButton type="submit" label="Guardar" icon="pi pi-check"></button>
+    </div>
+  </form>
+</p-dialog>
+
+
+<!-- ═══════════════════ DIALOG: CONFIRMAR ELIMINAR GRUPO ═══════════════════ -->
+<p-dialog header="Confirmar eliminación" [(visible)]="deleteGroupDialogVisible"
+          [modal]="true" [style]="{ width: '28rem' }"
+          [draggable]="false" [resizable]="false">
+  <div class="flex align-items-center gap-3 py-2">
+    <i class="pi pi-exclamation-triangle text-4xl text-yellow-500"></i>
+    <p class="m-0">¿Eliminar el grupo <strong>{{ groupToDelete?.nombre }}</strong>?
+      Esta acción también eliminará la membresía de todos sus usuarios.</p>
+  </div>
+  <div class="flex justify-content-end gap-2 mt-3">
+    <button pButton severity="secondary" label="Cancelar"
+            (click)="deleteGroupDialogVisible = false"></button>
+    <button pButton severity="danger" label="Eliminar" icon="pi pi-trash"
+            (click)="confirmDeleteGroup()"></button>
+  </div>
+</p-dialog>
+
+
+<!-- ═══════════════════ DIALOG: GESTIONAR MIEMBROS ═══════════════════ -->
+<p-dialog [header]="'Miembros — ' + (selectedGroup?.nombre ?? '')"
+          [(visible)]="membersDialogVisible" [modal]="true"
+          [style]="{ width: '62rem', maxWidth: '96vw' }"
+          [draggable]="false" [resizable]="false">
+
+  <div class="ag-members-toolbar">
+    <span class="text-sm text-color-secondary">
+      {{ members.length }} miembro(s) en este grupo
+    </span>
+    <button *ifHasPermission="'group:edit'" pButton icon="pi pi-user-plus"
+            label="Agregar miembro" size="small" (click)="openAddMember()"></button>
+  </div>
+
+  <p-table [value]="members" [loading]="loadingMembers" responsiveLayout="scroll">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Usuario</th>
+        <th>Email</th>
+        <th>Permisos en este grupo</th>
+        <th>Desde</th>
+        <th *ifHasPermission="'group:edit'" class="ag-actions-col">Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-member>
+      <tr>
+        <td>
+          <div class="flex align-items-center gap-2">
+            <p-avatar [label]="initial(member.usuarios.username)" shape="circle"
+                      styleClass="ag-member-avatar" />
+            <div>
+              <div class="font-semibold">{{ member.usuarios.username }}</div>
+              <div class="text-sm text-color-secondary">{{ member.usuarios.nombre_completo }}</div>
+            </div>
+          </div>
+        </td>
+        <td>{{ member.usuarios.email }}</td>
+        <td>
+          <div class="ag-perms-cell">
+            @if (member.permisos?.length) {
+              @for (p of member.permisos; track p) {
+                <p-chip [label]="permLabel(p)" styleClass="ag-perm-chip" />
+              }
+            } @else {
+              <span class="text-sm text-color-secondary">Sin permisos de grupo</span>
+            }
+          </div>
+        </td>
+        <td>{{ formatDate(member.fecha_unido) }}</td>
+        <td *ifHasPermission="'group:edit'" class="ag-actions-col">
+          <button pButton type="button" icon="pi pi-key" severity="info" text
+                  pTooltip="Editar permisos de grupo" tooltipPosition="top"
+                  (click)="openPermsDialog(member)"></button>
+          <button pButton type="button" icon="pi pi-user-minus" severity="danger" text
+                  pTooltip="Quitar del grupo" tooltipPosition="top"
+                  (click)="removeMember(member)"></button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="5" class="ag-empty">
+          <i class="pi pi-users"></i> Este grupo no tiene miembros aún.
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-dialog>
+
+
+<!-- ═══════════════════ DIALOG: AGREGAR MIEMBRO ═══════════════════ -->
+<p-dialog header="Agregar miembro al grupo" [(visible)]="addMemberDialogVisible"
+          [modal]="true" [style]="{ width: '36rem', maxWidth: '95vw' }"
+          [draggable]="false" [resizable]="false">
+  <div class="flex flex-column gap-3 pt-1">
+    <div class="flex flex-column gap-1">
+      <label class="ag-label">Seleccionar usuario</label>
+      <p-select [options]="userOptions" [(ngModel)]="selectedUserId"
+                optionLabel="label" optionValue="value"
+                placeholder="Buscar usuario…" filter="true"
+                [loading]="loadingUsers" appendTo="body" />
+    </div>
+    <div class="flex justify-content-end gap-2 mt-1">
+      <button pButton severity="secondary" label="Cancelar"
+              (click)="addMemberDialogVisible = false"></button>
+      <button pButton label="Agregar" icon="pi pi-user-plus"
+              [disabled]="!selectedUserId" (click)="confirmAddMember()"></button>
+    </div>
+  </div>
+</p-dialog>
+
+
+<!-- ═══════════════════ DIALOG: PERMISOS POR GRUPO ═══════════════════ -->
+<p-dialog [header]="'Permisos de grupo — ' + (editingMember?.usuarios?.username ?? '')"
+          [(visible)]="permsDialogVisible" [modal]="true"
+          [style]="{ width: '44rem', maxWidth: '96vw' }"
+          [draggable]="false" [resizable]="false">
+
+  <p class="text-sm text-color-secondary mt-0 mb-3">
+    Estos permisos se suman a los permisos globales del usuario,
+    pero solo aplican mientras trabaje en <strong>{{ selectedGroup?.nombre }}</strong>.
+  </p>
+
+  <div class="ag-perms-grid">
+    @for (grp of permGroups; track grp) {
+      <div class="ag-perm-section">
+        <p-divider align="left">
+          <span class="ag-perm-section-label">{{ grp }}</span>
+        </p-divider>
+        <div class="ag-perm-checks">
+          @for (p of permsByGroup(grp); track p.value) {
+            <div class="ag-perm-row" (click)="togglePerm(p.value)">
+              <div class="ag-perm-checkbox" [class.checked]="hasPerm(p.value)">
+                @if (hasPerm(p.value)) { <i class="pi pi-check"></i> }
+              </div>
+              <span class="ag-perm-name">{{ p.label }}</span>
+              <code class="ag-perm-code">{{ p.value }}</code>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="flex justify-content-between align-items-center mt-4">
+    <span class="text-sm text-color-secondary">
+      {{ selectedPerms.length }} permiso(s) seleccionado(s)
+    </span>
+    <div class="flex gap-2">
+      <button pButton severity="secondary" label="Cancelar"
+              (click)="permsDialogVisible = false"></button>
+      <button pButton label="Guardar permisos" icon="pi pi-save"
+              [loading]="savingPerms" (click)="savePerms()"></button>
+    </div>
+  </div>
+</p-dialog>

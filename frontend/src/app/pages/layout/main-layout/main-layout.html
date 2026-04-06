@@ -1,0 +1,34 @@
+<main class="app-shell">
+  <p-toolbar styleClass="app-topbar">
+    <ng-template pTemplate="start">
+      <div class="topbar-start">
+        <button
+          pButton
+          type="button"
+          class="p-button-text p-button-rounded"
+          icon="pi pi-bars"
+          (click)="toggleSidebar()"
+        ></button>
+        <div>
+          <h1 class="topbar-title">Proyecto angular IDS15</h1>
+          <p class="topbar-subtitle">Gestiona tu informacion en un solo lugar.</p>
+        </div>
+      </div>
+    </ng-template>
+    <ng-template pTemplate="end">
+      <div class="user-profile" (click)="menu.toggle($event)">
+        <p-avatar [label]="userInitials" shape="circle" styleClass="cursor-pointer"></p-avatar>
+        <span class="user-name cursor-pointer">{{ userName }}</span>
+        <i class="pi pi-angle-down cursor-pointer"></i>
+      </div>
+      <p-menu #menu [model]="userMenuItems" [popup]="true"></p-menu>
+    </ng-template>
+  </p-toolbar>
+
+  <section class="layout-body">
+    <app-sidebar [collapsed]="isSidebarCollapsed" />
+    <section class="page-content">
+      <router-outlet />
+    </section>
+  </section>
+</main>

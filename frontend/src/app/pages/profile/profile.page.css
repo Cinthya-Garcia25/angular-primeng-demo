@@ -1,0 +1,121 @@
+:host {
+  display: block;
+}
+
+.profile-wrapper {
+  width: min(100%, 48rem);
+  margin: 0 auto;
+}
+
+.profile-card {
+  width: 100%;
+}
+
+.subtitle {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.profile-icon {
+  font-size: 1.8rem;
+  color: var(--p-primary-color);
+  margin-bottom: 0.4rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.top-actions {
+  margin-bottom: 1rem;
+}
+
+.delete-confirm-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.delete-confirm-content i {
+  color: var(--p-yellow-500);
+  font-size: 1.3rem;
+}
+
+.delete-confirm-content p {
+  margin: 0;
+}
+
+.tickets-section {
+  margin-top: 1.5rem;
+}
+
+.tickets-summary {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  justify-content: center;
+}
+
+:host ::ng-deep .summary-stat {
+  flex: 1;
+  min-width: 90px;
+  max-width: 140px;
+}
+
+:host ::ng-deep .summary-stat .p-card-body {
+  padding: 0.75rem;
+}
+
+:host ::ng-deep .summary-stat.open {
+  background-color: var(--p-green-50);
+  border: 1px solid var(--p-green-200);
+}
+
+:host ::ng-deep .summary-stat.in-progress {
+  background-color: var(--p-yellow-50);
+  border: 1px solid var(--p-yellow-200);
+}
+
+:host ::ng-deep .summary-stat.closed {
+  background-color: var(--p-red-50);
+  border: 1px solid var(--p-red-200);
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-count {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.open-count     { color: var(--p-green-700); }
+.progress-count { color: var(--p-yellow-700); }
+.closed-count   { color: var(--p-red-700); }
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--p-text-color-secondary);
+}
+
+.text-center {
+  text-align: center;
+}

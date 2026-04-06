@@ -1,0 +1,122 @@
+<div class="grid grid-nogutter min-h-screen">
+  <p-toast />
+
+  <!-- Panel Izquierdo: Branding (Solo en escritorio) -->
+  <aside 
+    class="hidden md:flex md:col-6 brand-panel flex-column align-items-center justify-content-center p-8 relative overflow-hidden"
+  >
+    <div class="relative z-1 text-white max-w-26rem">
+      <div class="w-5rem h-5rem bg-white-alpha-20 border-round-xl flex align-items-center justify-content-center mb-4 shadow-4 backdrop-blur-sm">
+        <i class="pi pi-ticket text-4xl"></i>
+      </div>
+      <h1 class="text-6xl font-bold m-0 mb-2 line-height-1">TaskFlow</h1>
+      <p class="text-white-alpha-80 text-xl m-0 mb-5 line-height-3">
+        Gestiona proyectos y tickets de forma colaborativa con tu equipo de trabajo.
+      </p>
+      
+      <ul class="list-none p-0 m-0 grid gap-3">
+        <li class="flex align-items-center gap-3">
+          <span class="w-2rem h-2rem border-circle bg-white-alpha-20 flex align-items-center justify-content-center flex-shrink-0">
+            <i class="pi pi-check text-cyan-200 text-xs"></i>
+          </span>
+          <span class="text-white-alpha-90">Panel Kanban por grupo de trabajo</span>
+        </li>
+        <li class="flex align-items-center gap-3">
+          <span class="w-2rem h-2rem border-circle bg-white-alpha-20 flex align-items-center justify-content-center flex-shrink-0">
+            <i class="pi pi-check text-cyan-200 text-xs"></i>
+          </span>
+          <span class="text-white-alpha-90">Asignación y seguimiento de tickets</span>
+        </li>
+        <li class="flex align-items-center gap-3">
+          <span class="w-2rem h-2rem border-circle bg-white-alpha-20 flex align-items-center justify-content-center flex-shrink-0">
+            <i class="pi pi-check text-cyan-200 text-xs"></i>
+          </span>
+          <span class="text-white-alpha-90">Control de acceso por permisos</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Círculos decorativos (CSS mínimo necesario) -->
+    <div class="brand-deco brand-deco-1"></div>
+    <div class="brand-deco brand-deco-2"></div>
+  </aside>
+
+  <!-- Panel Derecho: Formulario -->
+  <main class="col-12 md:col-6 flex align-items-center justify-content-center p-4 bg-emphasis">
+    <p-card styleClass="w-full max-w-26rem shadow-6 border-round-2xl border-1 border-surface-200 dark:border-surface-700 overflow-hidden">
+      
+      <div class="text-center mb-5">
+        <div class="w-4rem h-4rem bg-primary border-round-xl flex align-items-center justify-content-center mx-auto mb-3 shadow-4">
+          <i class="pi pi-sign-in text-2xl text-primary-contrast"></i>
+        </div>
+        <h2 class="text-2xl font-bold m-0 mb-1 text-color">Iniciar sesión</h2>
+        <p class="text-muted-color m-0">Ingresa tus credenciales para continuar</p>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="submitLogin()" class="flex flex-column gap-4">
+        
+        <div class="flex flex-column gap-2">
+          <label for="username" class="font-semibold text-color flex align-items-center gap-2">
+            <i class="pi pi-user text-sm text-muted-color"></i> Usuario
+          </label>
+          <input
+            pInputText
+            id="username"
+            type="text"
+            placeholder="Ej: admin"
+            formControlName="username"
+            autocomplete="username"
+            class="w-full"
+          />
+          @if (controlHasError('username')) {
+            <p-message severity="error" text="El usuario es obligatorio." variant="simple"></p-message>
+          }
+        </div>
+
+        <div class="flex flex-column gap-2">
+          <label for="password" class="font-semibold text-color flex align-items-center gap-2">
+            <i class="pi pi-lock text-sm text-muted-color"></i> Contraseña
+          </label>
+          <p-password
+            inputId="password"
+            [feedback]="false"
+            [toggleMask]="true"
+            placeholder="Tu contraseña"
+            formControlName="password"
+            autocomplete="current-password"
+            styleClass="w-full"
+            [inputStyle]="{'width':'100%'}"
+          />
+          @if (controlHasError('password')) {
+            <p-message severity="error" text="La contraseña es obligatoria." variant="simple"></p-message>
+          }
+        </div>
+
+        <button 
+          pButton 
+          type="submit" 
+          label="Entrar al sistema" 
+          icon="pi pi-sign-in" 
+          class="w-full h-3rem mt-2"
+          [loading]="loading"
+        ></button>
+
+        <div class="flex align-items-center gap-3 text-muted-color text-sm py-2">
+          <div class="flex-grow-1 h-1px bg-surface-200 dark:bg-surface-700"></div>
+          <span>¿Aún no tienes cuenta?</span>
+          <div class="flex-grow-1 h-1px bg-surface-200 dark:bg-surface-700"></div>
+        </div>
+
+        <a
+          pButton
+          label="Crear cuenta"
+          icon="pi pi-user-plus"
+          severity="secondary"
+          [routerLink]="['/pages/auth/register']"
+          class="w-full"
+        ></a>
+
+      </form>
+    </p-card>
+  </main>
+</div>

@@ -1,0 +1,210 @@
+<section class="profile-wrapper">
+  <p-toast />
+  <p-card styleClass="profile-card">
+    <div class="profile-header">
+      <i class="pi pi-user profile-icon"></i>
+      <ng-template #title>Mi Perfil</ng-template>
+      <p class="subtitle">Informacion de tu cuenta</p>
+      <p-tag
+        [value]="isAccountActive ? 'Cuenta activa' : 'Cuenta desactivada'"
+        [severity]="isAccountActive ? 'success' : 'danger'"
+        styleClass="mt-2"
+      />
+    </div>
+
+    <div class="actions top-actions">
+      @if (isAccountActive) {
+        <button
+          pButton
+          type="button"
+          label="Desactivar cuenta"
+          icon="pi pi-trash"
+          severity="danger"
+          outlined
+          (click)="openDeactivateDialog()"
+        ></button>
+      } @else {
+        <button
+          pButton
+          type="button"
+          label="Restaurar cuenta"
+          icon="pi pi-refresh"
+          severity="success"
+          (click)="activateAccount()"
+        ></button>
+      }
+    </div>
+
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="form-grid">
+      <label for="username">Usuario</label>
+      <input
+        pInputText
+        id="username"
+        type="text"
+        placeholder="usuario123"
+        formControlName="username"
+        (keydown.space)="$event.preventDefault()"
+      />
+      @if (controlHasError('username')) {
+        <p-message severity="error" text="Usuario requerido (minimo 3 caracteres y sin espacios)." />
+      }
+
+      <label for="email">Email</label>
+      <input
+        pInputText
+        id="email"
+        type="email"
+        placeholder="correo@ejemplo.com"
+        formControlName="email"
+        (keydown.space)="$event.preventDefault()"
+      />
+      @if (controlHasError('email')) {
+        <p-message severity="error" text="Email requerido, valido y sin espacios." />
+      }
+
+      <label for="phone">Telefono (10 digitos)</label>
+      <input
+        pInputText
+        id="phone"
+        type="text"
+        pKeyFilter="int"
+        maxlength="10"
+        placeholder="Solo numeros"
+        formControlName="phone"
+      />
+      @if (controlHasError('phone')) {
+        <p-message severity="error" text="Telefono valido: solo numeros y 10 digitos." />
+      }
+
+      <label for="password">Contrasena</label>
+      <p-password
+        inputId="password"
+        [feedback]="false"
+        [toggleMask]="true"
+        placeholder="********"
+        formControlName="password"
+      />
+      @if (controlHasError('password')) {
+        <p-message severity="error" text="Minimo 10 caracteres y 1 simbolo especial." />
+      }
+
+      <label for="confirmPassword">Confirmar contrasena</label>
+      <p-password
+        inputId="confirmPassword"
+        [feedback]="false"
+        [toggleMask]="true"
+        placeholder="********"
+        formControlName="confirmPassword"
+      />
+      @if (controlHasError('confirmPassword')) {
+        <p-message severity="error" text="Debes confirmar la contrasena." />
+      }
+      @if (hasPasswordMismatch) {
+        <p-message severity="error" text="La confirmacion no coincide con la contrasena." />
+      }
+
+      <label for="fullName">Nombre completo</label>
+      <input pInputText id="fullName" type="text" placeholder="Tu nombre completo" formControlName="fullName" />
+      @if (controlHasError('fullName')) {
+        <p-message severity="error" text="Nombre completo requerido (minimo 5 caracteres)." />
+      }
+
+      <label for="address">Direccion</label>
+      <input pInputText id="address" type="text" placeholder="Tu direccion" formControlName="address" />
+      @if (controlHasError('address')) {
+        <p-message severity="error" text="Direccion requerida (minimo 10 caracteres)." />
+      }
+
+      <p-checkbox
+        inputId="isAdult"
+        formControlName="isAdult"
+        [binary]="true"
+        label="Confirmo que soy mayor de edad y asumo esta responsabilidad."
+      />
+      @if (controlHasError('isAdult')) {
+        <p-message severity="error" text="Debes confirmar mayoria de edad para guardar tu perfil." />
+      }
+
+      <div class="actions">
+        <button
+          pButton
+          type="submit"
+          label="Guardar perfil"
+          icon="pi pi-save"
+          [disabled]="profileForm.invalid || !isAccountActive"
+        ></button>
+      </div>
+    </form>
+  </p-card>
+
+  <p-card styleClass="profile-card tickets-section">
+    <div class="profile-header">
+      <i class="pi pi-ticket profile-icon"></i>
+      <h3 class="subtitle">Mis Tickets Asignados</h3>
+    </div>
+
+    <div class="tickets-summary">
+      <p-card styleClass="summary-stat open">
+        <div class="stat-content">
+          <span class="stat-count open-count">{{ openTicketsCount }}</span>
+          <span class="stat-label">Abiertos</span>
+        </div>
+      </p-card>
+      <p-card styleClass="summary-stat in-progress">
+        <div class="stat-content">
+          <span class="stat-count progress-count">{{ inProgressTicketsCount }}</span>
+          <span class="stat-label">En Progreso</span>
+        </div>
+      </p-card>
+      <p-card styleClass="summary-stat closed">
+        <div class="stat-content">
+          <span class="stat-count closed-count">{{ closedTicketsCount }}</span>
+          <span class="stat-label">Cerrados</span>
+        </div>
+      </p-card>
+    </div>
+
+    <p-table [value]="userTickets" [paginator]="true" [rows]="5" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>ID / Título</th>
+          <th>Estado</th>
+          <th>Prioridad</th>
+          <th>Fecha Límite</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-ticket>
+        <tr>
+          <td><strong>#{{ ticket.id }}</strong> - {{ ticket.title }}</td>
+          <td><p-tag [value]="statusLabel(ticket.status)" [severity]="stateSeverity(ticket.status)"></p-tag></td>
+          <td><p-tag [value]="priorityLabel(ticket.priority)" [severity]="prioritySeverity(ticket.priority)"></p-tag></td>
+          <td>{{ ticket.dueDate ? (ticket.dueDate | date:'dd/MM/yyyy') : 'Sin fecha' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="text-center">No tienes tickets asignados actualmente.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</section>
+
+<p-dialog
+  header="Confirmar Desactivacion"
+  [(visible)]="deactivateDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '34rem', maxWidth: '95vw' }"
+  (onHide)="closeDeactivateDialog()"
+>
+  <div class="delete-confirm-content">
+    <i class="pi pi-exclamation-triangle"></i>
+    <p>Estas seguro de que deseas desactivar tu cuenta? Esta accion marcara tu perfil como eliminado logico.</p>
+  </div>
+  <div class="actions">
+    <button pButton type="button" label="Cancelar" severity="secondary" (click)="closeDeactivateDialog()"></button>
+    <button pButton type="button" label="Desactivar" severity="danger" (click)="deactivateAccount()"></button>
+  </div>
+</p-dialog>

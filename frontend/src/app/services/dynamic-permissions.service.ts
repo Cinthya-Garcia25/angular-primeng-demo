@@ -1,0 +1,84 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, EMPTY, Subject, interval, switchMap, startWith, tap, catchError, map } from 'rxjs';
+import { PermissionsService } from './permissions.service';
+
+interface PermissionsApiResponse {
+    data: {
+        permissions: string[];
+        groupPermissions: string[];
+    };
+}
+
+@Injectable({ providedIn: 'root' })
+export class DynamicPermissionsService {
+    private readonly permissionsUrl = '/api/users/permissions';
+
+    /** Emite cada vez que los permisos se actualizan desde la DB */
+    private readonly changed$ = new Subject<void>();
+
+    constructor(
+        private http: HttpClient,
+        private permissionsSvc: PermissionsService
+    ) {
+        // Polling cada 15 s — refleja cambios de DB en tiempo real
+        interval(15_000).pipe(
+            startWith(0),
+            switchMap(() => this.poll())
+        ).subscribe();
+    }
+
+    // ── Internos ─────────────────────────────────────────────────────────────
+
+    private buildHeaders(): HttpHeaders {
+        const groupId = sessionStorage.getItem('selectedGroupId');
+        let headers = new HttpHeaders();
+        if (groupId) headers = headers.set('x-group-id', groupId);
+        return headers;
+    }
+
+    private applyPermissions(res: PermissionsApiResponse): void {
+        const perms      = res?.data?.permissions      ?? [];
+        const groupPerms = res?.data?.groupPermissions ?? [];
+        this.permissionsSvc.setPermissions(perms);
+        this.permissionsSvc.setGroupPermissions(groupPerms);
+        this.changed$.next();
+    }
+
+    private poll(): Observable<void> {
+        if (!sessionStorage.getItem('authUserId')) return EMPTY;
+
+        return this.http
+            .get<PermissionsApiResponse>(this.permissionsUrl, { headers: this.buildHeaders() })
+            .pipe(
+                tap(res => this.applyPermissions(res)),
+                map(() => void 0),
+                catchError(() => EMPTY)
+            );
+    }
+
+    // ── API pública ──────────────────────────────────────────────────────────
+
+    /** Fuerza una recarga inmediata desde la DB */
+    forceReload(): void {
+        this.poll().subscribe();
+    }
+
+    /**
+     * Recarga permisos desde DB y actualiza PermissionsService.
+     * Retorna Observable<void> — callers solo necesitan next/error.
+     */
+    refreshPermissions(): Observable<void> {
+        return this.http
+            .get<PermissionsApiResponse>(this.permissionsUrl, { headers: this.buildHeaders() })
+            .pipe(
+                tap(res => this.applyPermissions(res)),
+                map(() => void 0)
+            );
+    }
+
+    /** Observable que emite cada vez que los permisos cambian */
+    onPermissionsChanged(): Observable<void> {
+        return this.changed$.asObservable();
+    }
+}

@@ -1,0 +1,34 @@
+<aside class="sidebar" [class.collapsed]="collapsed">
+
+  <!-- Brand -->
+  <div class="sidebar-brand">
+    <i class="pi pi-th-large"></i>
+    @if (!collapsed) {
+      <span>Workspace</span>
+    }
+  </div>
+
+  <!-- Expanded: PanelMenu with nested Admin section -->
+  @if (!collapsed) {
+    <p-panelMenu [model]="menuItems" styleClass="sidebar-panel-menu" />
+  }
+
+  <!-- Collapsed: flat icon buttons -->
+  @if (collapsed) {
+    <nav class="sidebar-nav-collapsed">
+      @for (item of collapsedItems; track item.label) {
+        <button pButton type="button" [icon]="item.icon || ''" text severity="secondary"
+          [pTooltip]="item.label" tooltipPosition="right"
+          (click)="navigate(item.routerLink)">
+        </button>
+      }
+    </nav>
+  }
+
+  <div class="sidebar-version">
+    @if (!collapsed) {
+      <span>{{ appVersion }}</span>
+    }
+  </div>
+
+</aside>

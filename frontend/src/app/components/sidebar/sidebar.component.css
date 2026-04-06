@@ -1,0 +1,89 @@
+:host {
+  display: block;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+  min-height: 100%;
+  background: var(--p-surface-0);
+  border-right: 1px solid var(--p-surface-300);
+  padding: 1rem 0.75rem;
+  transition: width 0.2s ease;
+}
+
+.sidebar.collapsed {
+  width: 80px;
+  padding: 1rem 0.4rem;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  color: var(--p-primary-color);
+}
+
+:host ::ng-deep .sidebar-panel-menu {
+  width: 100%;
+}
+
+:host ::ng-deep .sidebar-panel-menu .p-panelmenu-panel {
+  border: none;
+  margin-bottom: 0.2rem;
+}
+
+:host ::ng-deep .sidebar-panel-menu .p-panelmenu-header-content {
+  border: none;
+  background: transparent;
+  border-radius: 0.5rem;
+}
+
+:host ::ng-deep .sidebar-panel-menu .p-panelmenu-header-content:hover {
+  background: var(--p-surface-100);
+}
+
+/* Highlight the Admin parent header */
+:host ::ng-deep .sidebar-panel-menu .p-panelmenu-header-content .pi-shield {
+  color: var(--p-primary-color);
+}
+
+/* Indent sub-items */
+:host ::ng-deep .sidebar-panel-menu .p-panelmenu-content .p-panelmenu-item-content {
+  padding-left: 1.5rem;
+}
+
+/* Subtler sub-item label */
+:host ::ng-deep .sidebar-panel-menu .p-panelmenu-content .p-panelmenu-item-label {
+  font-size: 0.9rem;
+}
+
+.sidebar-nav-collapsed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.sidebar-version {
+  margin-top: auto;
+  padding: 0.75rem;
+  border-top: 1px solid var(--p-surface-200);
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .sidebar,
+  .sidebar.collapsed {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--p-surface-300);
+  }
+}
