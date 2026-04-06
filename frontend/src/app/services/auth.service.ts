@@ -43,9 +43,10 @@ export class AuthService {
             tap((payload: AuthData) => {
                 this.setCookie(TOKEN_COOKIE, payload.token);
 
-                sessionStorage.setItem('authUser',   payload.user.name);
-                sessionStorage.setItem('authUserId', payload.user.id);
-                sessionStorage.setItem('authGroups', JSON.stringify(payload.user.groups));
+                sessionStorage.setItem('authUser',     payload.user.name);
+                sessionStorage.setItem('authUsername', payload.user.username);
+                sessionStorage.setItem('authUserId',   payload.user.id);
+                sessionStorage.setItem('authGroups',   JSON.stringify(payload.user.groups));
 
                 // Guardar datos completos del usuario en localStorage para fallback
                 const userData = {

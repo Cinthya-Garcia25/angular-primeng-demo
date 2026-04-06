@@ -32,5 +32,6 @@ export enum Permission {
     USER_DEACTIVATED = 'user:deactivated',
     USER_ACTIVATED = 'user:activated',
 
-    PERMISSIONS_MANAGE = 'permissions:manage'
+    PERMISSIONS_MANAGE = 'permissions:manage',
+    USERS_MANAGE = 'users:manage'
 }

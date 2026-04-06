@@ -72,11 +72,11 @@ export class PermissionsService {
     );
 
     readonly canViewUserManagement = computed(() =>
-        this.hasAnyPermission(['user:view:all', 'user:add', 'user:remove'])
+        this.hasAnyPermission(['users:manage', 'users:view', 'user:add', 'user:delete'])
     );
 
     readonly canViewTickets = computed(() =>
-        this.hasAnyPermission(['ticket:view', 'tickets:view', 'ticket:edit', 'ticket:edit:delete', 'ticket:edit:state'])
+        this.hasAnyPermission(['ticket:view', 'tickets:view', 'ticket:add', 'ticket:edit', 'ticket:delete', 'ticket:edit_state'])
     );
 
     readonly canViewAdmin = computed(() =>

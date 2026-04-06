@@ -1,0 +1,98 @@
+/* Dashboard styles */
+.dashboard-container {
+  min-height: calc(100vh - 4rem);
+}
+
+/* Card hover effects */
+.kpi-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Chart container adjustments */
+.chart-container {
+  position: relative;
+  height: 250px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Doughnut chart specific - center and fit */
+:host ::ng-deep .p-chart-doughnut {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+:host ::ng-deep .p-chart-doughnut canvas {
+  max-height: 200px !important;
+}
+
+/* Chart legend styling */
+:host ::ng-deep .p-chart-legend {
+  padding: 0.5rem 0 !important;
+}
+
+:host ::ng-deep .p-chart-legend ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  padding: 0 0.5rem;
+}
+
+:host ::ng-deep .p-chart-legend li {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* Group selector styling */
+.group-selector .p-dropdown {
+  min-width: 250px;
+}
+
+/* Table customizations */
+.tickets-table .p-datatable-thead > tr > th {
+  background: var(--surface-50);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.tickets-table .p-datatable-tbody > tr:hover {
+  background: var(--surface-100);
+}
+
+/* Status progress bars */
+.status-progress {
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface-200);
+}
+
+.status-progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--text-500);
+}
+
+.empty-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}

@@ -312,12 +312,47 @@
   <!-- ── TABLA ──────────────────────────────────────────────────────────── -->
   } @else {
   <div class="surface-0 border-1 surface-border border-round-xl p-3 shadow-1">
-    <p-table [value]="visibleTicketsArray" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5,10,25]"
+    
+    <!-- Filtros de tabla -->
+    <div class="flex flex-wrap align-items-center gap-3 p-3 surface-50 border-1 surface-border border-round-lg mb-3">
+      <div class="flex align-items-center gap-2">
+        <i class="pi pi-filter text-indigo-500"></i>
+        <span class="font-semibold text-sm">Filtros:</span>
+      </div>
+      
+      <div class="flex align-items-center gap-2">
+        <label class="text-xs text-500">Estado</label>
+        <p-select [options]="statusFilterOptions" optionLabel="label" optionValue="value"
+                  [(ngModel)]="statusFilter" placeholder="Todos" styleClass="w-10rem" [showClear]="true"
+                  (onChange)="applyFilters()" />
+      </div>
+      
+      <div class="flex align-items-center gap-2">
+        <label class="text-xs text-500">Prioridad</label>
+        <p-select [options]="priorityFilterOptions" optionLabel="label" optionValue="value"
+                  [(ngModel)]="priorityFilter" placeholder="Todas" styleClass="w-10rem" [showClear]="true"
+                  (onChange)="applyFilters()" />
+      </div>
+      
+      <div class="flex align-items-center gap-2">
+        <label class="text-xs text-500">Asignado</label>
+        <p-select [options]="assigneeFilterOptions" optionLabel="label" optionValue="value"
+                  [(ngModel)]="assigneeFilter" placeholder="Todos" styleClass="w-12rem" [showClear]="true"
+                  (onChange)="applyFilters()" />
+      </div>
+      
+      <button pButton type="button" icon="pi pi-times" severity="secondary" text size="small"
+              pTooltip="Limpiar filtros" (click)="clearFilters()"></button>
+    </div>
+
+    <p-table [value]="filteredTickets" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5,10,25]"
              [loading]="loading()" responsiveLayout="scroll"
              [globalFilterFields]="['titulo','estados.nombre','prioridades.nombre']">
       <ng-template pTemplate="header">
         <tr>
+          <th>ID</th>
           <th pSortableColumn="titulo">Título <p-sortIcon field="titulo" /></th>
+          <th>Grupo</th>
           <th pSortableColumn="estados.nombre">Estado <p-sortIcon field="estados.nombre" /></th>
           <th pSortableColumn="prioridades.nombre">Prioridad <p-sortIcon field="prioridades.nombre" /></th>
           <th>Asignado a</th>
@@ -328,7 +363,14 @@
       <ng-template pTemplate="body" let-t>
         <tr class="cursor-pointer hover:surface-100 transition-colors transition-duration-150"
             (click)="openDetailDialog(t)">
+          <td><span class="font-bold text-indigo-500">#{{ t.id }}</span></td>
           <td class="font-semibold">{{ t.titulo }}</td>
+          <td>
+            <div class="flex align-items-center gap-2">
+              <i class="pi pi-folder text-indigo-400"></i>
+              <span class="text-sm">{{ t.grupos?.nombre }}</span>
+            </div>
+          </td>
           <td><p-tag [value]="t.estados.nombre" [severity]="statusSeverity(t.estados.codigo)" /></td>
           <td><p-tag [value]="t.prioridades.nombre" [severity]="prioritySeverity(t.prioridades.codigo)" /></td>
           <td>{{ assigneeLabel(t) }}</td>
@@ -341,7 +383,7 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="6" class="text-center text-500 p-4">
+          <td colspan="8" class="text-center text-500 p-4">
             <i class="pi pi-inbox mr-2"></i>No hay tickets en este grupo.
           </td>
         </tr>
@@ -350,52 +392,7 @@
   </div>
   }
 
-  <!-- ── GRÁFICAS (al fondo) ───────────────────────────────────────────── -->
-  <section class="grid m-0">
-    <div class="col-12 md:col-6 p-2">
-      <div class="surface-0 border-1 surface-border border-round-xl p-4 shadow-1 h-full">
-        <div class="flex align-items-center gap-2 mb-3">
-          <i class="pi pi-chart-pie text-indigo-500"></i>
-          <span class="font-bold text-900">Tickets por estado</span>
-        </div>
-        @if (loading()) {
-          <p-skeleton height="220px" />
-        } @else if (totalTickets() === 0) {
-          <div class="flex align-items-center justify-content-center text-500 text-sm" style="height:220px">
-            <i class="pi pi-inbox mr-2"></i> Sin tickets
-          </div>
-        } @else {
-          <div style="height:220px">
-            <p-chart type="doughnut" [data]="statusChartData" [options]="statusChartOptions" />
-          </div>
-        }
-      </div>
-    </div>
-
-    <div class="col-12 md:col-6 p-2">
-      <div class="surface-0 border-1 surface-border border-round-xl p-4 shadow-1 h-full">
-        <div class="flex align-items-center gap-2 mb-3">
-          <i class="pi pi-chart-bar text-indigo-500"></i>
-          <span class="font-bold text-900">Tickets por prioridad</span>
-        </div>
-        @if (loading()) {
-          <p-skeleton height="220px" />
-        } @else if (totalTickets() === 0) {
-          <div class="flex align-items-center justify-content-center text-500 text-sm" style="height:220px">
-            <i class="pi pi-inbox mr-2"></i> Sin tickets
-          </div>
-        } @else {
-          <div style="height:220px">
-            <p-chart type="bar" [data]="priorityChartData" [options]="priorityChartOptions" />
-          </div>
-        }
-      </div>
-    </div>
-  </section>
-
-  } <!-- fin @else (grupo seleccionado) -->
-
-</div>
+}  <!-- fin @else (grupo seleccionado) -->
 
 
 <!-- ════════════════════════════════════════════════════

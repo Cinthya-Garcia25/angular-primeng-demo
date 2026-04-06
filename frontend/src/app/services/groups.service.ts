@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { map } from 'rxjs';
 import { ApiResponse } from '../models/auth.model';
 
@@ -71,17 +71,21 @@ export class GroupsService {
   // ── Member management ──────────────────────────────────────────────────────
 
   addMember(groupId: string, userId: string) {
-    return this.http.post<ApiResponse<null>>(`/api/groups/${groupId}/members`, { userId });
+    const headers = new HttpHeaders().set('x-group-id', groupId);
+    return this.http.post<ApiResponse<null>>(`/api/groups/${groupId}/members`, { userId }, { headers });
   }
 
   removeMember(groupId: string, userId: string) {
-    return this.http.delete<ApiResponse<null>>(`/api/groups/${groupId}/members/${userId}`);
+    const headers = new HttpHeaders().set('x-group-id', groupId);
+    return this.http.delete<ApiResponse<null>>(`/api/groups/${groupId}/members/${userId}`, { headers });
   }
 
   updateMemberPermissions(groupId: string, userId: string, permissions: string[]) {
+    const headers = new HttpHeaders().set('x-group-id', groupId);
     return this.http.put<ApiResponse<null>>(
       `/api/groups/${groupId}/members/${userId}/permissions`,
-      { permissions }
+      { permissions },
+      { headers }
     );
   }
 

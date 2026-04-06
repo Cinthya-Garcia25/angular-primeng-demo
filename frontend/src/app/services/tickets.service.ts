@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { map } from 'rxjs';
 import { ApiResponse } from '../models/auth.model';
 
@@ -48,41 +48,80 @@ export class TicketsService {
   constructor(private http: HttpClient) {}
 
   getAll(grupo_id?: string) {
+    // Usar grupo del parámetro o del sessionStorage
+    const groupId = grupo_id || sessionStorage.getItem('selectedGroupId') || undefined;
+    
     let params = new HttpParams();
-    if (grupo_id) params = params.set('grupo_id', grupo_id);
-    return this.http.get<ApiResponse<Ticket>>('/api/tickets', { params })
+    if (groupId) params = params.set('grupo_id', groupId);
+    
+    // Siempre enviar x-group-id header si tenemos grupo seleccionado
+    let headers = new HttpHeaders();
+    if (groupId) headers = headers.set('x-group-id', groupId);
+    
+    return this.http.get<ApiResponse<Ticket>>('/api/tickets', { params, headers })
       .pipe(map(res => res.data ?? []));
   }
 
   getById(id: string) {
-    return this.http.get<ApiResponse<Ticket>>(`/api/tickets/${id}`)
+    // Siempre enviar x-group-id header si hay grupo seleccionado
+    let headers = new HttpHeaders();
+    const groupId = sessionStorage.getItem('selectedGroupId');
+    if (groupId) headers = headers.set('x-group-id', groupId);
+    
+    return this.http.get<ApiResponse<Ticket>>(`/api/tickets/${id}`, { headers })
       .pipe(map(res => res.data?.[0] ?? null));
   }
 
   create(payload: CreateTicketPayload) {
-    return this.http.post<ApiResponse<{ id: string; titulo: string; creado_en: string }>>('/api/tickets', payload)
+    // Siempre enviar x-group-id header si hay grupo seleccionado
+    let headers = new HttpHeaders();
+    const groupId = sessionStorage.getItem('selectedGroupId');
+    if (groupId) headers = headers.set('x-group-id', groupId);
+    
+    return this.http.post<ApiResponse<{ id: string; titulo: string; creado_en: string }>>('/api/tickets', payload, { headers })
       .pipe(map(res => res.data?.[0]));
   }
 
   update(id: string, payload: UpdateTicketPayload) {
-    return this.http.put<ApiResponse<{ id: string; titulo: string; creado_en: string }>>(`/api/tickets/${id}`, payload)
+    // Siempre enviar x-group-id header si hay grupo seleccionado
+    let headers = new HttpHeaders();
+    const groupId = sessionStorage.getItem('selectedGroupId');
+    if (groupId) headers = headers.set('x-group-id', groupId);
+    
+    return this.http.put<ApiResponse<{ id: string; titulo: string; creado_en: string }>>(`/api/tickets/${id}`, payload, { headers })
       .pipe(map(res => res.data?.[0]));
   }
 
   updateStatus(id: string, estadoCodigo: string) {
+    // Siempre enviar x-group-id header si hay grupo seleccionado
+    let headers = new HttpHeaders();
+    const groupId = sessionStorage.getItem('selectedGroupId');
+    if (groupId) headers = headers.set('x-group-id', groupId);
+    
     return this.http.patch<ApiResponse<{ id: string; estado_id: string }>>(
       `/api/tickets/${id}/status`,
-      { estado_codigo: estadoCodigo }
+      { estado_codigo: estadoCodigo },
+      { headers }
     ).pipe(map(res => res.data?.[0]));
   }
 
   addComment(id: string, text: string) {
+    // Siempre enviar x-group-id header si hay grupo seleccionado
+    let headers = new HttpHeaders();
+    const groupId = sessionStorage.getItem('selectedGroupId');
+    if (groupId) headers = headers.set('x-group-id', groupId);
+    
     return this.http.post<ApiResponse<{ id: string; contenido: string; creado_en: string }>>(
-      `/api/tickets/${id}/comments`, { text }
+      `/api/tickets/${id}/comments`, { text }, { headers }
     ).pipe(map(res => res.data?.[0]));
   }
 
   delete(id: string) {
-    return this.http.delete<ApiResponse<null>>(`/api/tickets/${id}`);
+    // Siempre enviar x-group-id header si hay grupo seleccionado
+    let headers = new HttpHeaders();
+    const groupId = sessionStorage.getItem('selectedGroupId');
+    if (groupId) headers = headers.set('x-group-id', groupId);
+    
+    return this.http.delete<ApiResponse<null>>(`/api/tickets/${id}`, { headers });
   }
 }

@@ -9,7 +9,7 @@
         <input pInputText type="text" placeholder="Buscar usuarios..." [(ngModel)]="searchValue"
           aria-label="Buscar usuarios" />
       </p-iconfield>
-      <button *ifHasPermission="'user:add'" pButton icon="pi pi-user-plus" label="Nuevo Usuario"
+      <button [disabled]="!canAddUser" pButton icon="pi pi-user-plus" label="Nuevo Usuario"
         (click)="openCreateDialog()"></button>
     </div>
   </div>
@@ -45,10 +45,10 @@
           </td>
           <td>
             <div class="action-buttons">
-              <button *ifHasPermission="'user:edit'" pButton type="button" icon="pi pi-pencil" severity="secondary"
+              <button [disabled]="!canEditUser" pButton type="button" icon="pi pi-pencil" severity="secondary"
                 text (click)="openEditDialog(user)"></button>
-              <button *ifHasPermission="'user:remove'" pButton type="button" icon="pi pi-trash" severity="danger"
-                text (click)="deleteUser(user)" [disabled]="user.username === 'superadmin'"></button>
+              <button [disabled]="!canRemoveUser || user.username === 'superadmin'" pButton type="button" icon="pi pi-trash" severity="danger"
+                text (click)="deleteUser(user)"></button>
             </div>
           </td>
         </tr>

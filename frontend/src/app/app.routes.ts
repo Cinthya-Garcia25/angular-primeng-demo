@@ -34,9 +34,18 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 
-      // Dashboard principal: selección de grupo
+      // Dashboard principal: estadísticas
       {
         path: 'dashboard',
+        loadComponent: () =>
+          import('./pages/dashboard/dashboard.page').then(
+            (m) => m.DashboardComponent
+          )
+      },
+
+      // Tablero Kanban del grupo seleccionado
+      {
+        path: 'kanban',
         loadComponent: () =>
           import('./pages/group-dashboard/group-dashboard.page').then(
             (m) => m.GroupDashboardPageComponent

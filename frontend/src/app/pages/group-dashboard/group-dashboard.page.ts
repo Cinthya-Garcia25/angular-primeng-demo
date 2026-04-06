@@ -86,7 +86,7 @@ export class GroupDashboardPageComponent implements OnInit {
   loadingGroupPerms = false;
   groupMembers: GroupMember[] = [];
 
-  readonly currentUser = (sessionStorage.getItem('authUser') || '').trim();
+  readonly currentUser = (sessionStorage.getItem('authUsername') || '').trim();
 
   get showGroupPicker(): boolean {
     return this.selectedGroup === null;
@@ -97,6 +97,67 @@ export class GroupDashboardPageComponent implements OnInit {
   loading      = signal(false);
   errorMsg     = signal<string | null>(null);
   isKanbanView = true;
+
+  // ── Filtros de tabla ────────────────────────────────────────────────────
+  statusFilter: string | null = null;
+  priorityFilter: string | null = null;
+  assigneeFilter: string | null = null;
+
+  readonly statusFilterOptions = [
+    { label: 'Pendiente',   value: 'pendiente'   },
+    { label: 'En progreso', value: 'en_progreso' },
+    { label: 'Revisión',    value: 'revision'    },
+    { label: 'Hecho',       value: 'hecho'       },
+    { label: 'Bloqueado',   value: 'bloqueado'   }
+  ];
+
+  readonly priorityFilterOptions = [
+    { label: 'Alta',  value: 'alta'  },
+    { label: 'Media', value: 'media' },
+    { label: 'Baja',  value: 'baja'  }
+  ];
+
+  get assigneeFilterOptions(): { label: string; value: string }[] {
+    return [
+      { label: 'Sin asignar', value: '' },
+      ...this.groupMembers
+        .map(m => ({ label: m.usuarios.username, value: m.usuarios.id }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+    ];
+  }
+
+  // ── Tickets filtrados para la tabla ───────────────────────────────────────
+  get filteredTickets(): Ticket[] {
+    let tickets = this.visibleTickets();
+    
+    if (this.statusFilter) {
+      tickets = tickets.filter(t => t.estados?.codigo === this.statusFilter);
+    }
+    
+    if (this.priorityFilter) {
+      tickets = tickets.filter(t => t.prioridades?.codigo === this.priorityFilter);
+    }
+    
+    if (this.assigneeFilter !== null) {
+      if (this.assigneeFilter === '') {
+        tickets = tickets.filter(t => !t.asignado?.id);
+      } else {
+        tickets = tickets.filter(t => t.asignado?.id === this.assigneeFilter);
+      }
+    }
+    
+    return tickets;
+  }
+
+  applyFilters(): void {
+    // Los filtros se aplican automáticamente via el getter filteredTickets
+  }
+
+  clearFilters(): void {
+    this.statusFilter = null;
+    this.priorityFilter = null;
+    this.assigneeFilter = null;
+  }
 
   // ── Columnas Kanban ──────────────────────────────────────────────────────
   readonly columns = [
@@ -185,13 +246,12 @@ export class GroupDashboardPageComponent implements OnInit {
   );
 
   /**
-   * true si el usuario tiene permisos de edición/eliminación/admin.
+   * true si el usuario tiene permisos de admin.
    * Controla si ve TODOS los tickets del grupo o solo los asignados.
    */
   readonly canViewAllTickets = computed(() =>
     this.permsSvc.hasAnyPermission([
-      'ticket:edit', 'ticket:edit:delete', 'ticket:edit:state',
-      'group:edit', 'group:remove', 'user:view:all'
+      'group:edit', 'group:remove', 'users:view', 'permissions:manage'
     ])
   );
 
@@ -285,6 +345,13 @@ export class GroupDashboardPageComponent implements OnInit {
   }
   canDelete(): boolean { return this.permsSvc.hasPermission('ticket:edit:delete'); }
 
+  // ── Permiso para mover un ticket específico (drag & drop) ─────────────
+  canMoveTicket(ticket: Ticket): boolean {
+    const isAssignee = ticket.asignado?.username === this.currentUser;
+    const hasPermission = this.permsSvc.hasAnyPermission(['ticket:edit:state', 'ticket:edit_state']);
+    return isAssignee || hasPermission;
+  }
+
   // ── Chart: dona por estado ────────────────────────────────────────────────
   get statusChartData() {
     const labels = this.columns.map(c => c.label);
@@ -346,9 +413,6 @@ export class GroupDashboardPageComponent implements OnInit {
         error: () => this.loadTickets()
       });
     }
-
-    // Recargar tickets cuando el polling actualice permisos (ej. usuario pierde ticket:view)
-    this.dynamicPermsSvc.onPermissionsChanged().subscribe(() => this.loadTickets());
   }
 
   // ── Selección de grupo desde el picker ───────────────────────────────────
@@ -415,6 +479,7 @@ export class GroupDashboardPageComponent implements OnInit {
         }
       },
       error: err => {
+        console.error('[DEBUG] Error loading tickets:', err);
         this.errorMsg.set(err.error?.message ?? 'Error al cargar tickets.');
         this.loading.set(false);
       }
@@ -533,6 +598,13 @@ export class GroupDashboardPageComponent implements OnInit {
     if (this.draggedTicketId) {
       const ticket = this.tickets().find(t => t.id === this.draggedTicketId);
       if (ticket && ticket.estados?.codigo !== targetCodigo) {
+        // Verificar permisos antes de mover
+        if (!this.canMoveTicket(ticket)) {
+          // No tiene permisos para mover este ticket
+          this.draggedTicketId = null;
+          this.dropTargetStatus = null;
+          return;
+        }
         // Actualización optimista: mover la tarjeta de inmediato sin recargar
         this.tickets.update(ts =>
           ts.map(t => t.id === ticket.id

@@ -1,0 +1,272 @@
+<!-- ════════════════════════════════════════
+     DASHBOARD - ESTADÍSTICAS Y GRUPOS
+════════════════════════════════════════ -->
+<div class="flex flex-column gap-4 w-full max-w-screen-xl mx-auto p-3">
+
+  <!-- ── HEADER CON SELECTOR DE GRUPO ────────────────────────── -->
+  <header class="flex flex-column md:flex-row align-items-start md:align-items-center justify-content-between gap-3 surface-0 border-1 surface-border border-round-xl p-4 shadow-1">
+    <div class="flex align-items-center gap-3">
+      <div class="w-3rem h-3rem border-circle flex align-items-center justify-content-center"
+           style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+        <i class="pi pi-chart-pie text-white text-xl"></i>
+      </div>
+      <div class="flex flex-column gap-1">
+        <h1 class="m-0 text-xl font-bold text-900">Dashboard</h1>
+        <p class="m-0 text-sm text-500">Resumen de tickets y grupos</p>
+      </div>
+    </div>
+
+    <!-- Selector de Grupo - Click para ir al Kanban -->
+    <div class="flex align-items-center gap-2">
+      <span class="text-sm font-semibold text-600">
+        <i class="pi pi-folder-open mr-1"></i>Ir al grupo:
+      </span>
+      <p-select [options]="groups"
+                (onChange)="onGroupChange($event.value)"
+                optionLabel="name"
+                placeholder="Seleccionar grupo"
+                styleClass="w-64 md:w-80">
+        <ng-template let-group pTemplate="item">
+          <div class="flex align-items-center gap-2">
+            <i class="pi pi-folder text-indigo-500"></i>
+            <span class="font-medium">{{ group.name }}</span>
+          </div>
+        </ng-template>
+      </p-select>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <!-- ── CARGANDO ───────────────────────────────────────────── -->
+    <div class="flex flex-column gap-4">
+      <div class="grid m-0">
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="col-12 md:col-6 lg:col p-2">
+            <p-skeleton height="6rem" styleClass="border-round-xl"></p-skeleton>
+          </div>
+        }
+      </div>
+      <div class="grid m-0">
+        <div class="col-12 lg:col-6 p-2">
+          <p-skeleton height="300px" styleClass="border-round-xl"></p-skeleton>
+        </div>
+        <div class="col-12 lg:col-6 p-2">
+          <p-skeleton height="300px" styleClass="border-round-xl"></p-skeleton>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <!-- ── KPI CARDS ──────────────────────────────────────────── -->
+    <section class="grid m-0">
+      <!-- Total Tickets -->
+      <div class="col-12 md:col-6 lg:col p-2">
+        <div class="surface-0 border-1 surface-border border-round-xl p-3 shadow-1 hover:shadow-3 transition-shadow transition-duration-200 h-full">
+          <div class="flex align-items-center gap-3">
+            <div class="w-3rem h-3rem border-round-lg flex align-items-center justify-content-center"
+                 style="background: color-mix(in srgb, #4f46e5 12%, transparent);">
+              <i class="pi pi-ticket text-xl" style="color: #4f46e5;"></i>
+            </div>
+            <div class="flex flex-column">
+              <span class="text-3xl font-bold text-900">{{ totalTickets() }}</span>
+              <span class="text-sm font-semibold text-500 uppercase tracking-wider">Total Tickets</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tickets por Estado -->
+      @for (status of ticketsByStatus(); track status.codigo) {
+        <div class="col-12 md:col-6 lg:col p-2">
+          <div class="surface-0 border-1 surface-border border-round-xl p-3 shadow-1 hover:shadow-3 transition-shadow transition-duration-200 h-full"
+               [style.border-left]="'4px solid ' + status.color">
+            <div class="flex align-items-center gap-3">
+              <div class="w-3rem h-3rem border-round-lg flex align-items-center justify-content-center"
+                   [style.background]="'color-mix(in srgb, ' + status.color + ' 12%, transparent)'">
+                <i class="text-xl" [class]="'pi ' + (status.codigo === 'pendiente' ? 'pi-clock' : status.codigo === 'en_progreso' ? 'pi-sync' : status.codigo === 'revision' ? 'pi-eye' : status.codigo === 'hecho' ? 'pi-check-circle' : 'pi-ban')"
+                   [style.color]="status.color"></i>
+              </div>
+              <div class="flex flex-column">
+                <span class="text-3xl font-bold text-900">{{ status.count }}</span>
+                <span class="text-sm font-semibold text-500 uppercase tracking-wider">{{ status.label }}</span>
+              </div>
+            </div>
+            <div class="h-1rem border-round-xl surface-200 overflow-hidden mt-2">
+              <div class="h-full border-round-xl transition-all transition-duration-400"
+                   [style.background]="status.color"
+                   [style.width.%]="totalTickets() ? (status.count / totalTickets()) * 100 : 0"
+                   [style.min-width]="'4px'">
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- ── GRÁFICOS ───────────────────────────────────────────── -->
+    <section class="grid m-0">
+      <!-- Gráfico de Dona - Tickets por Estado -->
+      <div class="col-12 md:col-6 lg:col-4 p-2">
+        <div class="surface-0 border-1 surface-border border-round-xl p-4 shadow-1 h-full">
+          <div class="flex align-items-center gap-2 mb-4">
+            <i class="pi pi-chart-pie text-indigo-500"></i>
+            <h3 class="m-0 text-base font-bold text-900">Tickets por Estado</h3>
+          </div>
+          @if (totalTickets() > 0) {
+            <div style="height: 250px;">
+              <p-chart type="doughnut" [data]="statusChartData()" [options]="doughnutChartOptions"></p-chart>
+            </div>
+          } @else {
+            <div class="flex flex-column align-items-center justify-content-center gap-2 text-sm text-500" style="height: 250px;">
+              <i class="pi pi-inbox text-3xl opacity-50"></i>
+              <span>Sin datos para mostrar</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Gráfico de Barras - Tickets por Prioridad -->
+      <div class="col-12 md:col-6 lg:col-4 p-2">
+        <div class="surface-0 border-1 surface-border border-round-xl p-4 shadow-1 h-full">
+          <div class="flex align-items-center gap-2 mb-4">
+            <i class="pi pi-chart-bar text-indigo-500"></i>
+            <h3 class="m-0 text-base font-bold text-900">Tickets por Prioridad</h3>
+          </div>
+          @if (totalTickets() > 0) {
+            <div style="height: 250px;">
+              <p-chart type="bar" [data]="priorityChartData()" [options]="barChartOptions"></p-chart>
+            </div>
+          } @else {
+            <div class="flex flex-column align-items-center justify-content-center gap-2 text-sm text-500" style="height: 250px;">
+              <i class="pi pi-inbox text-3xl opacity-50"></i>
+              <span>Sin datos para mostrar</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Gráfico de Barras - Tickets por Grupo -->
+      <div class="col-12 md:col-6 lg:col-4 p-2">
+        <div class="surface-0 border-1 surface-border border-round-xl p-4 shadow-1 h-full">
+          <div class="flex align-items-center gap-2 mb-4">
+            <i class="pi pi-users text-indigo-500"></i>
+            <h3 class="m-0 text-base font-bold text-900">Tickets por Grupo</h3>
+          </div>
+          @if (groups.length > 1) {
+            <div style="height: 250px;">
+              <p-chart type="bar" [data]="groupChartData()" [options]="groupChartOptions"></p-chart>
+            </div>
+          } @else {
+            <div class="flex flex-column align-items-center justify-content-center gap-2 text-sm text-500" style="height: 250px;">
+              <i class="pi pi-users text-3xl opacity-50"></i>
+              <span>Único grupo - {{ totalTickets() }} tickets</span>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ── LISTA DE GRUPOS DEL USUARIO ──────────────────────── -->
+    <section class="surface-0 border-1 surface-border border-round-xl p-4 shadow-1">
+      <div class="flex align-items-center justify-content-between gap-3 mb-4">
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-users text-indigo-500"></i>
+          <h3 class="m-0 text-base font-bold text-900">Mis Grupos / Workspaces</h3>
+        </div>
+        <span class="text-sm text-500">{{ groups.length }} grupo{{ groups.length !== 1 ? 's' : '' }}</span>
+      </div>
+
+      @if (groups.length > 0) {
+        <div class="flex flex-wrap gap-2">
+          @for (group of groups; track group.id) {
+            <button pButton
+                    type="button"
+                    [label]="group.name"
+                    icon="pi pi-folder-open"
+                    severity="secondary"
+                    outlined
+                    size="small"
+                    (click)="onGroupChange(group)">
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="text-center text-sm text-500 py-4">
+          <i class="pi pi-inbox text-xl mb-2 block"></i>
+          No perteneces a ningún grupo.
+        </div>
+      }
+    </section>
+
+    <!-- ── TICKETS RECIENTES ──────────────────────────────────── -->
+    <section class="surface-0 border-1 surface-border border-round-xl p-4 shadow-1">
+      <div class="flex align-items-center gap-2 mb-4">
+        <i class="pi pi-history text-indigo-500"></i>
+        <h3 class="m-0 text-base font-bold text-900">Tickets Recientes</h3>
+      </div>
+
+      @if (recentTickets().length > 0) {
+        <p-table [value]="recentTickets()"
+                 [paginator]="false"
+                 [rows]="5"
+                 responsiveLayout="scroll"
+                 styleClass="p-datatable-sm">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>ID / Título</th>
+              <th>Estado</th>
+              <th>Prioridad</th>
+              <th>Asignado</th>
+              <th>Fecha</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-ticket>
+            <tr>
+              <td>
+                <div class="flex flex-column gap-1">
+                  <span class="font-bold text-indigo-500">#{{ ticket.id }}</span>
+                  <span class="text-sm font-medium text-900">{{ ticket.titulo }}</span>
+                </div>
+              </td>
+              <td>
+                <p-tag [value]="statusLabel(ticket.estados?.codigo)"
+                       [severity]="statusSeverity(ticket.estados?.codigo)"
+                       [style.background]="STATUS_ACCENT[ticket.estados?.codigo] + '20'"
+                       [style.color]="STATUS_ACCENT[ticket.estados?.codigo]"
+                       styleClass="font-semibold" />
+              </td>
+              <td>
+                <p-tag [value]="priorityLabel(ticket.prioridades?.codigo)"
+                       [severity]="prioritySeverity(ticket.prioridades?.codigo)"
+                       [style.background]="PRIORITY_ACCENT[ticket.prioridades?.codigo] + '20'"
+                       [style.color]="PRIORITY_ACCENT[ticket.prioridades?.codigo]"
+                       styleClass="font-semibold" />
+              </td>
+              <td>
+                <div class="flex align-items-center gap-2">
+                  @if (ticket.asignado) {
+                    <p-avatar [label]="assigneeInitial(ticket)"
+                              shape="circle"
+                              size="normal"
+                              [style]="{'background': 'linear-gradient(135deg, #6366f1, #a78bfa)', 'color': '#ffffff'}">
+                    </p-avatar>
+                    <span class="text-sm">{{ ticket.asignado.nombre_completo || ticket.asignado.username }}</span>
+                  } @else {
+                    <span class="text-sm text-500">—</span>
+                  }
+                </div>
+              </td>
+              <td>
+                <span class="text-sm text-500">{{ formatDate(ticket.creado_en) }}</span>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      } @else {
+        <div class="flex flex-column align-items-center justify-content-center gap-2 text-sm text-500 py-6">
+          <i class="pi pi-inbox text-3xl opacity-50"></i>
+          <span>No hay tickets en este grupo</span>
+        </div>
+      }
+    </section>
+  }
+</div>

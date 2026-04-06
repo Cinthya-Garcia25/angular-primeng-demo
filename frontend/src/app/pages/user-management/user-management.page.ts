@@ -77,7 +77,22 @@ export class UserManagementPageComponent implements OnInit {
   readonly allPermissions = Object.values(Permission);
 
   get canManageGroupPerms(): boolean {
-    return this.perms.hasPermission(Permission.PERMISSIONS_MANAGE);
+    return this.perms.hasPermission('users:manage' as Permission);
+  }
+
+  get canAddUser(): boolean {
+    return this.perms.hasPermission(Permission.USER_ADD) || 
+           this.perms.hasPermission('users:manage' as Permission);
+  }
+
+  get canEditUser(): boolean {
+    return this.perms.hasPermission(Permission.USER_EDIT) || 
+           this.perms.hasPermission('users:manage' as Permission);
+  }
+
+  get canRemoveUser(): boolean {
+    return this.perms.hasPermission(Permission.USER_REMOVE) || 
+           this.perms.hasPermission('users:manage' as Permission);
   }
 
   getPermissionLabel(perm: string): string {
