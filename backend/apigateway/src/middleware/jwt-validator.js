@@ -1,5 +1,4 @@
-const jwt   = require('jsonwebtoken');
-const fetch = require('node-fetch');
+const jwt = require('jsonwebtoken');
 
 // Rutas públicas que NO requieren token
 const PUBLIC_PATHS = ['/api/auth/login', '/api/auth/register', '/health'];
@@ -12,6 +11,9 @@ const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL ?? 'http://localhost:300
  * a través del Users Service. Nunca usa los permisos embebidos en el JWT.
  */
 async function fetchFreshPermissions(authHeader, groupId) {
+    // node-fetch v3 requiere importación dinámica (ESM)
+    const { default: fetch } = await import('node-fetch');
+    
     const headers = { Authorization: authHeader };
     if (groupId) headers['x-group-id'] = groupId;
 
@@ -53,8 +55,6 @@ async function jwtValidator(req, reply) {
         if (freshPerms !== null) {
             req.user.permissions = freshPerms;
         } else {
-            // El servicio de usuarios no pudo devolver permisos → denegar acceso
-            // (evitar que el JWT con permisos viejos sea el fallback)
             req.user.permissions = [];
         }
     } catch {

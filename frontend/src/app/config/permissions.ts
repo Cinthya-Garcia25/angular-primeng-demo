@@ -15,9 +15,10 @@ export const TicketPermissions = {
 
 export const UserPermissions = {
     VIEW: 'user.view',
-    USERS_VIEW: 'users.view',
+    VIEW_ALL: 'user:view:all',
+    EDIT: 'user.edit',
     ADD: 'user.add',
-    DELETE: 'user.delete'
+    REMOVE: 'user.remove'
 };
 
 export const AllPermissions = [

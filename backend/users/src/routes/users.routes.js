@@ -69,7 +69,7 @@ router.get('/', requireAuth, requirePermission('users:view'), async (_req, res) 
 router.get('/:id', requireAuth, requirePermission('user:view'), async (req, res) => {
     const { data: user, error } = await supabase
         .from('usuarios')
-        .select('id, username, email, nombre_completo, permisos_globales, is_active, creado_en')
+        .select('id, username, email, nombre_completo, telefono, direccion, permisos_globales, is_active, creado_en, password_hash')
         .eq('id', req.params.id)
         .single();
 
@@ -97,7 +97,9 @@ router.put('/:id',
         const { password, group_ids, permissions, ...rest } = req.body;
         const updates = { ...rest };
 
-        if (password) updates.password_hash = await hashPassword(password);
+        if (password) {
+            updates.password_hash = await hashPassword(password);
+        }
         if (permissions !== undefined) updates.permisos_globales = permissions;
 
         const { data, error } = await supabase
@@ -107,7 +109,9 @@ router.put('/:id',
             .select('id, username, email, nombre_completo, permisos_globales, is_active')
             .single();
 
-        if (error) return fail(res, 500, 'SxUS500', 'Error al actualizar usuario');
+        if (error) {
+            return fail(res, 500, 'SxUS500', 'Error al actualizar usuario');
+        }
 
         if (Array.isArray(group_ids)) {
             await supabase.from('grupo_miembros').delete().eq('usuario_id', req.params.id);
@@ -126,6 +130,50 @@ router.delete('/:id', requireAuth, requirePermission('user:delete'), async (req,
     const { error } = await supabase.from('usuarios').delete().eq('id', req.params.id);
     if (error) return fail(res, 500, 'SxUS500', 'Error al eliminar usuario');
     return ok(res, 200, 'SxUS200', null);
+});
+
+// PATCH /api/users/:id/deactivate  — requiere user:delete (o un permiso específico de admin)
+router.patch('/:id/deactivate', requireAuth, requirePermission('user:delete'), async (req, res) => {
+    const { data, error } = await supabase
+        .from('usuarios')
+        .update({ is_active: false })
+        .eq('id', req.params.id)
+        .select('id, username, is_active')
+        .single();
+
+    if (error) return fail(res, 500, 'SxUS500', 'Error al desactivar usuario');
+    return ok(res, 200, 'SxUS200', [data]);
+});
+
+// PATCH /api/users/:id/activate  — requiere user:add (o un permiso específico de admin)
+router.patch('/:id/activate', requireAuth, requirePermission('user:add'), async (req, res) => {
+    const { data, error } = await supabase
+        .from('usuarios')
+        .update({ is_active: true })
+        .eq('id', req.params.id)
+        .select('id, username, is_active')
+        .single();
+
+    if (error) return fail(res, 500, 'SxUS500', 'Error al activar usuario');
+    return ok(res, 200, 'SxUS200', [data]);
+});
+
+// PUT /api/users/:id/permissions  — requiere permissions:manage
+router.put('/:id/permissions', requireAuth, requirePermission('permissions:manage'), async (req, res) => {
+    const { permissions } = req.body;
+    if (!Array.isArray(permissions)) {
+        return fail(res, 400, 'SxUS400', 'permissions debe ser un array');
+    }
+
+    const { data, error } = await supabase
+        .from('usuarios')
+        .update({ permisos_globales: permissions })
+        .eq('id', req.params.id)
+        .select('id, username, permisos_globales')
+        .single();
+
+    if (error) return fail(res, 500, 'SxUS500', 'Error al actualizar permisos');
+    return ok(res, 200, 'SxUS200', [data]);
 });
 
 module.exports = router;

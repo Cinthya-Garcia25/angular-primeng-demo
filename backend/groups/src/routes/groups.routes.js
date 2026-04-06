@@ -134,7 +134,7 @@ router.put('/:id', requireAuth, requirePermission('group:edit'), async (req, res
 });
 
 // DELETE /api/groups/:id
-router.delete('/:id', requireAuth, requirePermission('group:delete'), async (req, res) => {
+router.delete('/:id', requireAuth, requirePermission('group:remove'), async (req, res) => {
     const { error } = await supabase.from('grupos').delete().eq('id', req.params.id);
     if (error) return fail(res, 500, 'SxGS500', 'Error al eliminar grupo');
     return ok(res, 200, 'SxGS200', null);
@@ -157,7 +157,8 @@ router.get('/:id/members/me', requireAuth, async (req, res) => {
 
 // POST /api/groups/:id/members — agregar usuario al grupo
 router.post('/:id/members', requireAuth, requirePermission('group:edit'), async (req, res) => {
-    const { userId } = req.body;
+    // Aceptar tanto userId (frontend) como usuario_id (schema)
+    const userId = req.body.userId || req.body.usuario_id;
     if (!userId) return fail(res, 400, 'SxGS400', 'userId requerido');
 
     const { data: existing } = await supabase

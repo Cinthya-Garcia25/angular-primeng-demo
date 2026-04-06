@@ -49,7 +49,7 @@
             <button *ifHasPermission="'group:edit'" pButton type="button" icon="pi pi-pencil"
                     severity="secondary" text pTooltip="Editar grupo" tooltipPosition="top"
                     (click)="openEditGroup(group)"></button>
-            <button *ifHasPermission="'group:delete'" pButton type="button" icon="pi pi-trash"
+            <button *ifHasPermission="'group:remove'" pButton type="button" icon="pi pi-trash"
                     severity="danger" text pTooltip="Eliminar grupo" tooltipPosition="top"
                     (click)="askDeleteGroup(group)"></button>
           </td>

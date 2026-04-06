@@ -82,7 +82,7 @@ export class TicketsPageComponent implements OnInit, OnDestroy {
   ];
 
   get canViewTickets()   { return this.permissionsService.hasPermission(Permission.TICKET_VIEW); }
-  get canViewAllTickets(){ return this.permissionsService.hasPermission(Permission.TICKETS_VIEW) || this.permissionsService.hasPermission(Permission.USERS_VIEW); }
+  get canViewAllTickets(){ return this.permissionsService.hasPermission(Permission.TICKETS_VIEW) || this.permissionsService.hasPermission(Permission.USER_VIEW_ALL); }
 
   ngOnInit(): void {
     this.currentGroupId = this.route.snapshot.paramMap.get('id') || '';

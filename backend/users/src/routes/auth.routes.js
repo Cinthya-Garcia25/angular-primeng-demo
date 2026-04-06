@@ -15,7 +15,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 
     const { data: user, error } = await supabase
         .from('usuarios')
-        .select('id, username, email, password_hash, is_active, permisos_globales, nombre_completo')
+        .select('id, username, email, password_hash, is_active, permisos_globales, nombre_completo, telefono, direccion')
         .eq('username', username.trim().toLowerCase())
         .single();
 
@@ -46,6 +46,8 @@ router.post('/login', validate(loginSchema), async (req, res) => {
             id:          user.id,
             name:        user.nombre_completo ?? user.username,
             email:       user.email,
+            telefono:    user.telefono,
+            direccion:   user.direccion,
             permissions: user.permisos_globales ?? [],
             groups
         }

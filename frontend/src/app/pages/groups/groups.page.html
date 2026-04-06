@@ -51,7 +51,7 @@
               (click)="enterGroup(group)" aria-label="Entrar al grupo"></button>
             <button *ifHasPermission="'group:edit'" pButton type="button" icon="pi pi-pencil" severity="secondary"
               text (click)="openEditDialog(group)" aria-label="Editar grupo"></button>
-            <button *ifHasPermission="'group:delete'" pButton type="button" icon="pi pi-trash" severity="danger" text
+            <button *ifHasPermission="'group:remove'" pButton type="button" icon="pi pi-trash" severity="danger" text
               (click)="askDeleteGroup(group)" aria-label="Eliminar grupo"></button>
           </td>
         </tr>

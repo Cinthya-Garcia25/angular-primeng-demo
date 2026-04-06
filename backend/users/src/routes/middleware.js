@@ -23,6 +23,7 @@ function requireAuth(req, res, next) {
 function requirePermission(permission) {
     return async (req, res, next) => {
         const userId = req.user?.userId ?? req.user?.id;
+        
         if (!userId) {
             fail(res, 403, 'SxUS403', `Permiso requerido: ${permission}`);
             return;
@@ -72,7 +73,7 @@ function requirePermission(permission) {
             // Actualizar req.user.permissions con los permisos frescos
             req.user.permissions = effectivePerms;
             next();
-        } catch {
+        } catch (err) {
             fail(res, 500, 'SxUS500', 'Error al verificar permisos');
         }
     };

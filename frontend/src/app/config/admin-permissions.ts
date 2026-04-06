@@ -19,13 +19,12 @@ export const ADMIN_PERMISSIONS: Permission[] = [
 
   // Permisos de usuarios (según tu lista)
   Permission.USER_VIEW,
-  Permission.USERS_VIEW,
+  Permission.USER_VIEW_ALL,
   Permission.USER_EDIT,
   Permission.USER_ADD,
-  Permission.USER_DELETE,
+  Permission.USER_REMOVE,
 
   // Permisos adicionales de gestión (recomendados)
-  Permission.USERS_MANAGE,
   Permission.PERMISSIONS_MANAGE
 ];
 

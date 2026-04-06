@@ -65,7 +65,7 @@ export const routes: Routes = [
       {
         path: 'admin/users',
         canActivate: [permissionGuard],
-        data: { permissions: [Permission.USERS_VIEW, Permission.USER_ADD, Permission.USER_DELETE] },
+        data: { permissions: [Permission.USER_VIEW_ALL, Permission.USER_ADD, Permission.USER_REMOVE] },
         loadComponent: () =>
           import('./pages/user-management/user-management.page').then(
             (m) => m.UserManagementPageComponent

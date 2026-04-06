@@ -135,13 +135,9 @@ export class GroupDashboardPageComponent implements OnInit {
   // ── Tickets visibles según permisos ───────────────────────────────────────
   readonly visibleTickets = computed(() => {
     const allTickets = this.tickets();
-    console.log('🎫 Total tickets cargados:', allTickets.length);
-    console.log('🎫 Usuario actual:', this.currentUser);
-    console.log('🎫 Puede ver todos los tickets:', this.canViewAllTickets());
     
     // Si tiene permisos avanzados, ve todos los tickets
     if (this.canViewAllTickets()) {
-      console.log('🎫 Usuario con permisos avanzados, mostrando todos los tickets');
       return allTickets;
     }
     
@@ -149,11 +145,9 @@ export class GroupDashboardPageComponent implements OnInit {
     const me = this.currentUser.toLowerCase();
     const filtered = allTickets.filter(t => {
       const asignado = (t.asignado?.username ?? '').toLowerCase();
-      console.log('🎫 Ticket:', t.titulo, 'asignado a:', asignado, 'es mi ticket:', asignado === me);
       return asignado === me;
     });
     
-    console.log('🎫 Tickets filtrados para usuario:', filtered.length);
     return filtered;
   });
 

@@ -7,26 +7,17 @@ export class PermissionsService {
     private groupPermissions = signal<string[]>([]);
 
     constructor() {
-        const savedGlobal = sessionStorage.getItem('userPermissions');
-        if (savedGlobal) {
-            try { this.userPermissions.set(JSON.parse(savedGlobal)); } catch { /* ignore */ }
-        }
-        const savedGroup = sessionStorage.getItem('groupPermissions');
-        if (savedGroup) {
-            try { this.groupPermissions.set(JSON.parse(savedGroup)); } catch { /* ignore */ }
-        }
+        // Ya no usamos sessionStorage, dependemos del DynamicPermissionsService
     }
 
     // ── Permisos globales ──────────────────────────────────────────────────
 
     setPermissions(perms: string[]) {
         this.userPermissions.set(perms);
-        sessionStorage.setItem('userPermissions', JSON.stringify(perms));
     }
 
     clearPermissions() {
         this.userPermissions.set([]);
-        sessionStorage.removeItem('userPermissions');
         this.clearGroupPermissions();
     }
 
@@ -38,12 +29,10 @@ export class PermissionsService {
 
     setGroupPermissions(perms: string[]) {
         this.groupPermissions.set(perms);
-        sessionStorage.setItem('groupPermissions', JSON.stringify(perms));
     }
 
     clearGroupPermissions() {
         this.groupPermissions.set([]);
-        sessionStorage.removeItem('groupPermissions');
     }
 
     getGroupPermissions(): string[] {
@@ -83,11 +72,11 @@ export class PermissionsService {
     );
 
     readonly canViewUserManagement = computed(() =>
-        this.hasAnyPermission(['users:view', 'user:add', 'user:delete'])
+        this.hasAnyPermission(['user:view:all', 'user:add', 'user:remove'])
     );
 
     readonly canViewTickets = computed(() =>
-        this.hasAnyPermission(['ticket:view', 'tickets:view', 'ticket:edit', 'ticket:delete', 'ticket:edit_state'])
+        this.hasAnyPermission(['ticket:view', 'tickets:view', 'ticket:edit', 'ticket:edit:delete', 'ticket:edit:state'])
     );
 
     readonly canViewAdmin = computed(() =>

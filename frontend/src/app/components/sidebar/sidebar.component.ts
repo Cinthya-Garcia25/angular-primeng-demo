@@ -1,4 +1,4 @@
-import { Component, inject, Input, OnInit } from '@angular/core';
+import { Component, inject, Input, OnInit, OnDestroy, DestroyRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { PanelMenuModule } from 'primeng/panelmenu';
 import { ButtonModule } from 'primeng/button';
@@ -6,6 +6,11 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DividerModule } from 'primeng/divider';
 import { MenuItem } from 'primeng/api';
 import { PermissionsService } from '../../services/permissions.service';
+import { DynamicPermissionsService } from '../../services/dynamic-permissions.service';
+import { Permission } from '../../models/permissions.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-sidebar',
@@ -13,9 +18,12 @@ import { PermissionsService } from '../../services/permissions.service';
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css'
 })
-export class SidebarComponent implements OnInit {
+export class SidebarComponent implements OnInit, OnDestroy {
   private readonly perms  = inject(PermissionsService);
+  private readonly dynamicPerms = inject(DynamicPermissionsService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly permissionsChanged$ = new Subject<void>();
 
   @Input() collapsed = false;
   readonly appVersion = 'v1.0.0';
@@ -29,6 +37,28 @@ export class SidebarComponent implements OnInit {
     const canAdmin  = this.perms.canViewAdmin();
     const canGroups = this.perms.canViewGroups();
     const canUsers  = this.perms.canViewUserManagement();
+    const canProfile = this.perms.hasPermission(Permission.USER_VIEW);
+
+    this.updateMenuItems(canAdmin, canGroups, canUsers, canProfile);
+
+    // Escuchar cambios de permisos para actualizar el menú dinámicamente
+    this.dynamicPerms.onPermissionsChanged().pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      this.updateMenuItems(
+        this.perms.canViewAdmin(),
+        this.perms.canViewGroups(),
+        this.perms.canViewUserManagement(),
+        this.perms.hasPermission(Permission.USER_VIEW)
+      );
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.permissionsChanged$.complete();
+  }
+
+  private updateMenuItems(canAdmin: boolean, canGroups: boolean, canUsers: boolean, canProfile: boolean): void {
 
     this.menuItems = [
       {
@@ -59,7 +89,8 @@ export class SidebarComponent implements OnInit {
       {
         label: 'Perfil',
         icon: 'pi pi-user',
-        routerLink: '/profile'
+        routerLink: '/profile',
+        visible: canProfile
       }
     ];
 
@@ -68,10 +99,10 @@ export class SidebarComponent implements OnInit {
     for (const item of this.menuItems) {
       if (item.items?.length) {
         for (const child of item.items) {
-          if (child.visible !== false) this.collapsedItems.push(child);
+          if (child.visible) this.collapsedItems.push(child);
         }
       } else {
-        if (item.visible !== false) this.collapsedItems.push(item);
+        if (item.visible) this.collapsedItems.push(item);
       }
     }
   }

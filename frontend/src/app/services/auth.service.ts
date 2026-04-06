@@ -47,6 +47,17 @@ export class AuthService {
                 sessionStorage.setItem('authUserId', payload.user.id);
                 sessionStorage.setItem('authGroups', JSON.stringify(payload.user.groups));
 
+                // Guardar datos completos del usuario en localStorage para fallback
+                const userData = {
+                    id: payload.user.id,
+                    username: payload.user.name,
+                    email: payload.user.email,
+                    telefono: payload.user.telefono,
+                    direccion: payload.user.direccion,
+                    nombre_completo: payload.user.name
+                };
+                localStorage.setItem('authUserData', JSON.stringify(userData));
+
                 // Cargar permisos del JWT como estado inicial
                 this.permissionsSvc.setPermissions(payload.user.permissions as string[]);
 
@@ -73,6 +84,7 @@ export class AuthService {
     logout(): void {
         this.deleteCookie(TOKEN_COOKIE);
         sessionStorage.clear();
+        localStorage.removeItem('authUserData');
         this.permissionsSvc.clearPermissions();
     }
 

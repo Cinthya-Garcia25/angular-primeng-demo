@@ -17,6 +17,8 @@ export interface AuthUser {
     id: string;
     name: string;
     email: string;
+    telefono?: string;
+    direccion?: string;
     permissions: Permission[];
     groups: AuthGroup[];
 }

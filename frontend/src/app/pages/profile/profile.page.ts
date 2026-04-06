@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectorRef, DestroyRef, OnInit, inject, OnDestroy } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MessageService } from 'primeng/api';
@@ -17,16 +17,23 @@ import { TicketsMockService } from '../../services/tickets-mock.service';
 import { Ticket } from '../../models/ticket.model';
 import { Subscription } from 'rxjs';
 import { DatePipe } from '@angular/common';
+import { PermissionsService } from '../../services/permissions.service';
+import { DynamicPermissionsService } from '../../services/dynamic-permissions.service';
+import { Permission } from '../../models/permissions.model';
+import { HttpClient } from '@angular/common/http';
+import { catchError, of } from 'rxjs';
 
 interface UserProfile {
   username: string;
   email: string;
   phone: string;
   password: string;
+  confirmPassword: string;
   fullName: string;
   address: string;
   isAdult: boolean;
   isActive: boolean;
+  hasPassword: boolean; // Nuevo campo para indicar si tiene contraseña
 }
 
 interface RegisteredUser {
@@ -47,6 +54,12 @@ function passwordsMatchValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const password = control.get('password')?.value ?? '';
     const confirmPassword = control.get('confirmPassword')?.value ?? '';
+    
+    // Solo validar si hay contenido en el campo password
+    if (!password) {
+      return null; // No validar si password está vacío
+    }
+    
     return password && confirmPassword && password !== confirmPassword ? { passwordMismatch: true } : null;
   };
 }
@@ -77,8 +90,14 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly ticketsMockService = inject(TicketsMockService);
+  private readonly permissionsService = inject(PermissionsService);
+  private readonly dynamicPermissionsService = inject(DynamicPermissionsService);
+  private readonly http = inject(HttpClient);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly sub = new Subscription();
 
+  hasPasswordSet = false; // Indica si el usuario tiene contraseña establecida
+  passwordHint = ''; // Sugerencia visual de la contraseña (últimos caracteres)
   isAccountActive = true;
   deactivateDialogVisible = false;
 
@@ -87,19 +106,16 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   inProgressTicketsCount = 0;
   closedTicketsCount = 0;
 
-  readonly profileForm = this.fb.group(
-    {
+  readonly profileForm = this.fb.group({
       username:        ['', [Validators.required, Validators.minLength(3), Validators.pattern(NO_WHITESPACE_PATTERN)]],
       email:           ['', [Validators.required, Validators.email, Validators.pattern(NO_WHITESPACE_PATTERN)]],
       phone:           ['', [Validators.required, Validators.pattern(PHONE_PATTERN)]],
-      password:        ['', [Validators.required, Validators.pattern(PASSWORD_PATTERN)]],
-      confirmPassword: ['', [Validators.required]],
+      password:        ['', []], // Opcional - solo validar si tiene contenido
+      confirmPassword: ['', []], // Opcional - solo validar si password tiene contenido
       fullName:        ['', [Validators.required, Validators.minLength(5)]],
       address:         ['', [Validators.required, Validators.minLength(10)]],
-      isAdult:         [false, [Validators.requiredTrue]]
-    },
-    { validators: passwordsMatchValidator() }
-  );
+      isAdult:         [true, [Validators.requiredTrue]]
+    }, { validators: passwordsMatchValidator() });
 
   constructor() {
     this.enforceNoWhitespace('username');
@@ -109,9 +125,32 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadProfile();
     this.loadUserTickets();
+    
+    // Escuchar cambios de permisos para recargar datos del perfil
+    this.dynamicPermissionsService.onPermissionsChanged().pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      this.loadProfile();
+    });
   }
 
   ngOnDestroy(): void { this.sub.unsubscribe(); }
+
+  get canViewProfile(): boolean {
+    return this.permissionsService.hasPermission(Permission.USER_VIEW);
+  }
+
+  get canEditProfile(): boolean {
+    return this.permissionsService.hasPermission(Permission.USER_EDIT);
+  }
+
+  get canDeactivateAccount(): boolean {
+    return this.permissionsService.hasPermission(Permission.USER_DEACTIVATED);
+  }
+
+  get canActivateAccount(): boolean {
+    return this.permissionsService.hasPermission(Permission.USER_ACTIVATED);
+  }
 
   controlHasError(controlName: keyof typeof this.profileForm.controls): boolean {
     const control = this.profileForm.controls[controlName];
@@ -119,8 +158,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   }
 
   get hasPasswordMismatch(): boolean {
-    return this.profileForm.hasError('passwordMismatch') &&
-      (this.profileForm.controls.confirmPassword.dirty || this.profileForm.controls.confirmPassword.touched);
+    return !!this.profileForm.hasError('passwordMismatch') &&
+      !!(this.profileForm.get('confirmPassword')?.dirty || this.profileForm.get('confirmPassword')?.touched);
   }
 
   private loadUserTickets(): void {
@@ -165,21 +204,96 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   }
 
   private loadProfile(): void {
+    // Primero intentar obtener datos del usuario desde el backend
+    const authUserId = sessionStorage.getItem('authUserId');
+    
+    if (authUserId) {
+      this.http.get<any>(`/api/users/${authUserId}`).pipe(
+        catchError(error => {
+          // Si falla el backend, intentar con localStorage como fallback
+          this.loadProfileFromStorage();
+          return of(null);
+        })
+      ).subscribe(userData => {
+        if (userData && userData.data && userData.data.length > 0) {
+          // El backend devuelve { statusCode, intOpCode, data: [{ ...user, groups }] }
+          const userInfo = userData.data[0];
+          this.loadProfileFromBackend(userInfo);
+        } else {
+          // Si no hay datos del backend, usar localStorage
+          this.loadProfileFromStorage();
+        }
+      });
+    } else {
+      // Si no hay authUserId, usar localStorage
+      this.loadProfileFromStorage();
+    }
+  }
+
+  private loadProfileFromBackend(userData: any): void {
+    // Verificar si el usuario tiene contraseña (si tiene password_hash, significa que tiene contraseña)
+    this.hasPasswordSet = !!userData.password_hash;
+    
+    const formData = {
+      username: userData.username ?? '', 
+      email: userData.email ?? '', 
+      phone: userData.telefono || '', 
+      password: '', // No cargar contraseña desde backend
+      confirmPassword: '', 
+      fullName: userData.nombre_completo || '', 
+      address: userData.direccion || '', 
+      isAdult: true // Por defecto siempre marcado para facilitar el uso
+    };
+    
+    // Actualizar el formulario directamente sin setTimeout
+    this.profileForm.patchValue(formData);
+    
+    // Forzar actualización de la vista
+    this.profileForm.updateValueAndValidity();
+    this.changeDetectorRef.detectChanges();
+    
+    this.isAccountActive = userData.is_active ?? true;
+    this.toggleFormByStatus();
+  }
+
+  private loadProfileFromStorage(): void {
     const rawProfile = localStorage.getItem(USER_PROFILE_KEY);
     if (rawProfile) {
       try {
         const profile = JSON.parse(rawProfile) as Partial<UserProfile>;
         this.profileForm.patchValue({ username: profile.username ?? '', email: profile.email ?? '', phone: profile.phone ?? '', password: profile.password ?? '', confirmPassword: profile.password ?? '', fullName: profile.fullName ?? '', address: profile.address ?? '', isAdult: profile.isAdult ?? false });
         this.isAccountActive = profile.isActive ?? true;
+        this.hasPasswordSet = profile.hasPassword ?? false;
         this.toggleFormByStatus();
         return;
       } catch { localStorage.removeItem(USER_PROFILE_KEY); }
     }
-    const authUsername = sessionStorage.getItem('authUser') ?? '';
-    if (authUsername) {
-      this.profileForm.patchValue({ username: authUsername });
-      const userFromStorage = this.getStoredUsers().find(u => u.username === authUsername.toLowerCase());
-      this.isAccountActive = userFromStorage?.isActive ?? true;
+    
+    // Intentar obtener datos básicos del login almacenado en sessionStorage
+    const authUser = sessionStorage.getItem('authUser');
+    const authUserId = sessionStorage.getItem('authUserId');
+    
+    if (authUser && authUserId) {
+      this.profileForm.patchValue({ username: authUser });
+      
+      // Intentar obtener datos adicionales del localStorage de auth
+      try {
+        const authUserData = localStorage.getItem('authUserData');
+        if (authUserData) {
+          const userData = JSON.parse(authUserData);
+          this.profileForm.patchValue({
+            email: userData.email || '',
+            phone: userData.telefono || '',
+            fullName: userData.nombre_completo || authUser,
+            address: userData.direccion || ''
+          });
+        }
+      } catch (e) {
+        // No additional user data found
+      }
+      
+      this.isAccountActive = true;
+      this.hasPasswordSet = false;
       this.toggleFormByStatus();
     }
   }
@@ -191,14 +305,63 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       this.messageService.add({ severity: 'warn', summary: 'Perfil incompleto', detail: 'Debes completar todos los campos del perfil.' });
       return;
     }
-    const currentAuthUser = (sessionStorage.getItem('authUser') ?? '').toLowerCase();
+    
+    const authUserId = sessionStorage.getItem('authUserId');
+    
+    if (!authUserId) {
+      return;
+    }
+    
     const value = this.profileForm.getRawValue();
-    const profile: UserProfile = { username: value.username?.trim().toLowerCase() ?? '', email: value.email?.trim().toLowerCase() ?? '', phone: value.phone ?? '', password: value.password ?? '', fullName: value.fullName?.trim() ?? '', address: value.address?.trim() ?? '', isAdult: value.isAdult ?? false, isActive: this.isAccountActive };
-    localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profile));
-    this.updateRegisteredUser(profile, currentAuthUser);
-    sessionStorage.setItem('authUser', profile.username);
-    this.profileForm.patchValue({ confirmPassword: profile.password });
-    this.messageService.add({ severity: 'success', summary: 'Perfil actualizado', detail: 'Tus datos se guardaron correctamente.' });
+    
+    // Preparar datos para el backend
+    const backendData: { nombre_completo?: string; telefono?: string; direccion?: string; password?: string } = {
+      nombre_completo: value.fullName?.trim(),
+      telefono: value.phone?.trim(),
+      direccion: value.address?.trim()
+    };
+    
+    // Solo incluir contraseña si se proporciona una nueva
+    if (value.password && value.password.trim()) {
+      backendData.password = value.password.trim();
+    }
+    
+    // Actualizar en el backend
+    if (authUserId) {
+      this.http.put(`/api/users/${authUserId}`, backendData).subscribe({
+        next: (response) => {
+          // Actualizar el estado de hasPasswordSet si se cambió la contraseña
+          if (value.password && value.password.trim()) {
+            this.hasPasswordSet = true;
+          }
+          
+          // También guardar en localStorage como backup
+          const currentAuthUser = (sessionStorage.getItem('authUser') ?? '').toLowerCase();
+          const profile: UserProfile = { 
+            username: value.username?.trim().toLowerCase() ?? currentAuthUser, 
+            email: value.email?.trim().toLowerCase() ?? '', 
+            phone: value.phone ?? '', 
+            password: value.password ?? '', 
+            confirmPassword: value.confirmPassword ?? '',
+            fullName: value.fullName?.trim() ?? '', 
+            address: value.address?.trim() ?? '', 
+            isAdult: value.isAdult ?? false, 
+            isActive: this.isAccountActive,
+            hasPassword: this.hasPasswordSet
+          };
+          localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profile));
+          this.updateRegisteredUser(profile, currentAuthUser);
+          sessionStorage.setItem('authUser', profile.username);
+          this.profileForm.patchValue({ confirmPassword: profile.password });
+          
+          this.messageService.add({ severity: 'success', summary: 'Perfil actualizado', detail: 'Tus datos se guardaron correctamente.' });
+        },
+        error: (error) => {
+          const errorMsg = error?.error?.message ?? 'No se pudo actualizar el perfil.';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: errorMsg });
+        }
+      });
+    }
   }
 
   openDeactivateDialog(): void { this.deactivateDialogVisible = true; }
@@ -248,7 +411,18 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   private persistCurrentStatusOnly(): void {
     const value = this.profileForm.getRawValue();
     const currentAuthUser = (sessionStorage.getItem('authUser') ?? '').toLowerCase();
-    const profile: UserProfile = { username: value.username?.trim().toLowerCase() ?? currentAuthUser, email: value.email?.trim().toLowerCase() ?? '', phone: value.phone ?? '', password: value.password ?? '', fullName: value.fullName?.trim() ?? '', address: value.address?.trim() ?? '', isAdult: value.isAdult ?? false, isActive: this.isAccountActive };
+    const profile: UserProfile = { 
+      username: value.username?.trim().toLowerCase() ?? currentAuthUser, 
+      email: value.email?.trim().toLowerCase() ?? '', 
+      phone: value.phone ?? '', 
+      password: value.password ?? '', 
+      confirmPassword: value.confirmPassword ?? '',
+      fullName: value.fullName?.trim() ?? '', 
+      address: value.address?.trim() ?? '', 
+      isAdult: value.isAdult ?? false, 
+      isActive: this.isAccountActive,
+      hasPassword: this.hasPasswordSet
+    };
     localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profile));
     this.updateRegisteredUser(profile, currentAuthUser);
   }

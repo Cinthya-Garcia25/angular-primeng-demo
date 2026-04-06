@@ -7,6 +7,8 @@ export enum Permission {
     GROUPS_ADD = 'groups:add',
     GROUP_DELETE = 'group:delete',
     GROUPS_DELETE = 'groups:delete',
+    GROUP_ADD_MEMBER = 'group:add:member',
+    GROUP_REMOVE_MEMBER = 'group:remove:member',
 
     TICKET_VIEW = 'ticket:view',
     TICKETS_VIEW = 'tickets:view',
@@ -14,16 +16,21 @@ export enum Permission {
     TICKETS_EDIT = 'tickets:edit',
     TICKET_ADD = 'ticket:add',
     TICKETS_ADD = 'tickets:add',
-    TICKET_DELETE = 'ticket:delete',
-    TICKET_EDIT_STATE = 'ticket:edit_state',
+    TICKET_DELETE = 'ticket:edit:delete',
+    TICKET_EDIT_STATE = 'ticket:edit:state',
+    TICKET_EDIT_COMMENT = 'ticket:edit:comment',
+    TICKET_EDIT_PRIORITY = 'ticket:edit:priority',
+    TICKET_EDIT_DEADLINE = 'ticket:edit:deadline',
+    TICKET_EDIT_ASSIGN = 'ticket:edit:assign',
 
     USER_VIEW = 'user:view',
-    USERS_VIEW = 'users:view',
+    USER_VIEW_ALL = 'user:view:all',
     USER_EDIT = 'user:edit',
-    USERS_EDIT = 'users:edit',
-    USERS_MANAGE = 'users:manage',
     USER_ADD = 'user:add',
-    USER_DELETE = 'user:delete',
+    USER_REMOVE = 'user:remove',
+    USER_EDIT_PERMISSION = 'user:edit:permission',
+    USER_DEACTIVATED = 'user:deactivated',
+    USER_ACTIVATED = 'user:activated',
 
     PERMISSIONS_MANAGE = 'permissions:manage'
 }

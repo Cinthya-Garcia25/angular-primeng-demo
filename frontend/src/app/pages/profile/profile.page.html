@@ -1,5 +1,6 @@
 <section class="profile-wrapper">
   <p-toast />
+  @if (canViewProfile) {
   <p-card styleClass="profile-card">
     <div class="profile-header">
       <i class="pi pi-user profile-icon"></i>
@@ -13,7 +14,7 @@
     </div>
 
     <div class="actions top-actions">
-      @if (isAccountActive) {
+      @if (isAccountActive && canDeactivateAccount) {
         <button
           pButton
           type="button"
@@ -23,7 +24,7 @@
           outlined
           (click)="openDeactivateDialog()"
         ></button>
-      } @else {
+      } @else if (canActivateAccount) {
         <button
           pButton
           type="button"
@@ -41,6 +42,7 @@
         pInputText
         id="username"
         type="text"
+        [value]="profileForm.get('username')?.value"
         placeholder="usuario123"
         formControlName="username"
         (keydown.space)="$event.preventDefault()"
@@ -54,6 +56,7 @@
         pInputText
         id="email"
         type="email"
+        [value]="profileForm.get('email')?.value"
         placeholder="correo@ejemplo.com"
         formControlName="email"
         (keydown.space)="$event.preventDefault()"
@@ -67,6 +70,7 @@
         pInputText
         id="phone"
         type="text"
+        [value]="profileForm.get('phone')?.value"
         pKeyFilter="int"
         maxlength="10"
         placeholder="Solo numeros"
@@ -84,6 +88,15 @@
         placeholder="********"
         formControlName="password"
       />
+      @if (hasPasswordSet) {
+        <div class="password-info">
+          <small class="text-success">✅ Contraseña establecida.</small>
+          <small class="text-muted">• Déjala en blanco para mantenerla.</small>
+          <small class="text-muted">• Ingresa nueva solo si deseas cambiarla.</small>
+        </div>
+      } @else {
+        <small class="text-info">ℹ️ Aún no tienes contraseña. Ingresa una para proteger tu cuenta.</small>
+      }
       @if (controlHasError('password')) {
         <p-message severity="error" text="Minimo 10 caracteres y 1 simbolo especial." />
       }
@@ -104,13 +117,13 @@
       }
 
       <label for="fullName">Nombre completo</label>
-      <input pInputText id="fullName" type="text" placeholder="Tu nombre completo" formControlName="fullName" />
+      <input pInputText id="fullName" type="text" [value]="profileForm.get('fullName')?.value" placeholder="Tu nombre completo" formControlName="fullName" />
       @if (controlHasError('fullName')) {
         <p-message severity="error" text="Nombre completo requerido (minimo 5 caracteres)." />
       }
 
       <label for="address">Direccion</label>
-      <input pInputText id="address" type="text" placeholder="Tu direccion" formControlName="address" />
+      <input pInputText id="address" type="text" [value]="profileForm.get('address')?.value" placeholder="Tu direccion" formControlName="address" />
       @if (controlHasError('address')) {
         <p-message severity="error" text="Direccion requerida (minimo 10 caracteres)." />
       }
@@ -126,6 +139,7 @@
       }
 
       <div class="actions">
+        @if (canEditProfile) {
         <button
           pButton
           type="submit"
@@ -133,10 +147,13 @@
           icon="pi pi-save"
           [disabled]="profileForm.invalid || !isAccountActive"
         ></button>
+        }
       </div>
     </form>
   </p-card>
+  }
 
+  @if (canViewProfile) {
   <p-card styleClass="profile-card tickets-section">
     <div class="profile-header">
       <i class="pi pi-ticket profile-icon"></i>
@@ -188,6 +205,7 @@
       </ng-template>
     </p-table>
   </p-card>
+  }
 </section>
 
 <p-dialog

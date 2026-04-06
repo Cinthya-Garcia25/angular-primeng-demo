@@ -189,8 +189,7 @@ async function ticketsRoutes(fastify) {
     // ticket:edit también permite mover tickets de otros usuarios.
     fastify.patch('/:id/status', async (req, reply) => {
         const perms        = req.user.permissions;
-        const canEditState = perms.includes('ticket:edit:state') ||
-                             perms.includes('ticket:edit_state') ||
+        const canEditState = perms.includes('ticket:edit_state') ||
                              perms.includes('ticket:edit');
 
         if (!canEditState) {
@@ -227,8 +226,12 @@ async function ticketsRoutes(fastify) {
         return ok(reply, 200, 'SxTS200', [data]);
     });
 
-    // POST /api/tickets/:id/comments
+    // POST /api/tickets/:id/comments  — requiere ticket:edit:comment
     fastify.post('/:id/comments', async (req, reply) => {
+        if (!req.user.permissions.includes('ticket:edit:comment')) {
+            return fail(reply, 403, 'SxCS403', 'Permiso requerido: ticket:edit:comment');
+        }
+
         const { data, error } = await supabase
             .from('comentarios')
             .insert({
@@ -243,11 +246,93 @@ async function ticketsRoutes(fastify) {
         return ok(reply, 201, 'SxCS201', [data]);
     });
 
-    // DELETE /api/tickets/:id  — requiere ticket:edit:delete
+    // PATCH /api/tickets/:id/priority  — requiere ticket:edit:priority
+    fastify.patch('/:id/priority', async (req, reply) => {
+        if (!req.user.permissions.includes('ticket:edit:priority')) {
+            return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:edit:priority');
+        }
+
+        const { prioridad_id, prioridad_codigo } = req.body;
+        if (!prioridad_id && !prioridad_codigo) {
+            return fail(reply, 400, 'SxTS400', 'prioridad_id o prioridad_codigo es requerido');
+        }
+
+        // Resolver prioridad por UUID o por código
+        let prioridadQuery = supabase.from('prioridades').select('id, codigo');
+        if (prioridad_id) prioridadQuery = prioridadQuery.eq('id', prioridad_id);
+        else           prioridadQuery = prioridadQuery.eq('codigo', prioridad_codigo);
+
+        const { data: prioridad } = await prioridadQuery.single();
+        if (!prioridad) return fail(reply, 400, 'SxTS400', 'Prioridad inválida');
+
+        const { data, error } = await supabase
+            .from('tickets').update({ prioridad_id: prioridad.id }).eq('id', req.params.id)
+            .select('id, prioridad_id').single();
+
+        if (error) return fail(reply, 500, 'SxTS500', 'Error al actualizar prioridad');
+
+        await supabase.from('historial_tickets').insert({
+            ticket_id: req.params.id, usuario_id: req.user.userId,
+            accion: `actualizó: prioridad → ${prioridad.codigo}`
+        });
+
+        return ok(reply, 200, 'SxTS200', [data]);
+    });
+
+    // PATCH /api/tickets/:id/deadline  — requiere ticket:edit:deadline
+    fastify.patch('/:id/deadline', async (req, reply) => {
+        if (!req.user.permissions.includes('ticket:edit:deadline')) {
+            return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:edit:deadline');
+        }
+
+        const { fecha_final } = req.body;
+        if (fecha_final === undefined) {
+            return fail(reply, 400, 'SxTS400', 'fecha_final es requerido');
+        }
+
+        const { data, error } = await supabase
+            .from('tickets').update({ fecha_final }).eq('id', req.params.id)
+            .select('id, fecha_final').single();
+
+        if (error) return fail(reply, 500, 'SxTS500', 'Error al actualizar fecha límite');
+
+        await supabase.from('historial_tickets').insert({
+            ticket_id: req.params.id, usuario_id: req.user.userId,
+            accion: fecha_final ? `actualizó: fecha límite → ${fecha_final}` : 'eliminó: fecha límite'
+        });
+
+        return ok(reply, 200, 'SxTS200', [data]);
+    });
+
+    // PATCH /api/tickets/:id/assign  — requiere ticket:edit:assign
+    fastify.patch('/:id/assign', async (req, reply) => {
+        if (!req.user.permissions.includes('ticket:edit:assign')) {
+            return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:edit:assign');
+        }
+
+        const { asignado_id } = req.body;
+        if (asignado_id === undefined) {
+            return fail(reply, 400, 'SxTS400', 'asignado_id es requerido');
+        }
+
+        const { data, error } = await supabase
+            .from('tickets').update({ asignado_id }).eq('id', req.params.id)
+            .select('id, asignado_id').single();
+
+        if (error) return fail(reply, 500, 'SxTS500', 'Error al actualizar asignación');
+
+        await supabase.from('historial_tickets').insert({
+            ticket_id: req.params.id, usuario_id: req.user.userId,
+            accion: asignado_id ? `asignó a: ${asignado_id}` : 'desasignó ticket'
+        });
+
+        return ok(reply, 200, 'SxTS200', [data]);
+    });
+
+    // DELETE /api/tickets/:id  — requiere ticket:delete
     fastify.delete('/:id', async (req, reply) => {
-        if (!req.user.permissions.includes('ticket:edit:delete') &&
-            !req.user.permissions.includes('ticket:delete')) {
-            return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:edit:delete');
+        if (!req.user.permissions.includes('ticket:delete')) {
+            return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:delete');
         }
 
         const { error } = await supabase.from('tickets').delete().eq('id', req.params.id);

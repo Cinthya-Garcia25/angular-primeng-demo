@@ -77,20 +77,19 @@ export class UserManagementPageComponent implements OnInit {
   readonly allPermissions = Object.values(Permission);
 
   get canManageGroupPerms(): boolean {
-    return this.perms.hasPermission(Permission.USERS_MANAGE);
+    return this.perms.hasPermission(Permission.PERMISSIONS_MANAGE);
   }
 
   getPermissionLabel(perm: string): string {
     const labels: Record<string, string> = {
       'group:view':       'Ver grupos',           'group:edit':         'Editar grupos',
-      'group:add':        'Crear grupos',          'group:delete':       'Eliminar grupos',
+      'group:add':        'Crear grupos',          'group:remove':       'Eliminar grupos',
       'ticket:view':      'Ver tickets',           'tickets:view':       'Ver todos los tickets',
       'ticket:edit':      'Editar tickets',        'ticket:add':         'Crear tickets',
-      'ticket:delete':    'Eliminar tickets',      'ticket:edit_state':  'Cambiar estado',
-      'user:view':        'Ver usuario',           'users:view':         'Ver todos los usuarios',
-      'users:manage':     'Gestionar usuarios',    'user:edit':          'Editar usuarios',
-      'user:add':         'Crear usuarios',        'user:delete':        'Eliminar usuarios',
-      'permissions:manage': 'Gestionar permisos'
+      'ticket:edit:delete': 'Eliminar tickets',      'ticket:edit:state':  'Cambiar estado',
+      'user:view':        'Ver usuario',           'user:view:all':       'Ver todos los usuarios',
+      'permissions:manage': 'Gestionar permisos',    'user:edit':          'Editar usuarios',
+      'user:add':         'Crear usuarios',        'user:remove':        'Eliminar usuarios'
     };
     return labels[perm] || perm;
   }

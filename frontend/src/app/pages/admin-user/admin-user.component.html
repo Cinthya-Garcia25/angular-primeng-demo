@@ -39,7 +39,7 @@
           <td>
             <div class="action-buttons">
               <button *ifHasPermission="'user:edit'" pButton type="button" icon="pi pi-pencil" severity="secondary" text (click)="openEditDialog(user)" [disabled]="false"></button>
-              <button *ifHasPermission="'user:delete'" pButton type="button" icon="pi pi-trash" severity="danger" text (click)="deleteUser(user)" [disabled]="user.username === 'superadmin'"></button>
+              <button *ifHasPermission="'user:remove'" pButton type="button" icon="pi pi-trash" severity="danger" text (click)="deleteUser(user)" [disabled]="user.username === 'superadmin'"></button>
             </div>
           </td>
         </tr>

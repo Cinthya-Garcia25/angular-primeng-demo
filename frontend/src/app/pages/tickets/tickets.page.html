@@ -58,12 +58,12 @@
           <td>{{ ticket.assignee }}</td>
           <td>{{ formatDate(ticket.createdAt) }}</td>
           <td class="actions-col">
-            <button *ifHasPermission="'ticket:edit_state'" pButton type="button" icon="pi pi-sync" severity="info"
+            <button *ifHasPermission="'ticket:edit:state'" pButton type="button" icon="pi pi-sync" severity="info"
               text [pTooltip]="'Cambiar a: ' + statusLabel(nextState(ticket.status))"
               (click)="changeState(ticket, nextState(ticket.status))" aria-label="Cambiar estado"></button>
             <button *ifHasPermission="'ticket:edit'" pButton type="button" icon="pi pi-pencil" severity="secondary"
               text (click)="openEditDialog(ticket)" aria-label="Editar ticket"></button>
-            <button *ifHasPermission="'ticket:delete'" pButton type="button" icon="pi pi-trash" severity="danger" text
+            <button *ifHasPermission="'ticket:edit:delete'" pButton type="button" icon="pi pi-trash" severity="danger" text
               (click)="askDeleteTicket(ticket)" aria-label="Eliminar ticket"></button>
           </td>
         </tr>
