@@ -261,7 +261,7 @@
                        draggable="true"
                        (dragstart)="onDragStart($event, t)"
                        (dragend)="onDragEnd()"
-                       (click)="openDetailDialog(t)">
+                       (click)="onTicketClick(t)">
 
                     <!-- Franja de prioridad -->
                     <div class="kanban-priority-stripe border-round-left-lg"
@@ -405,6 +405,7 @@
   [draggable]="false"
   [resizable]="false"
   [style]="{ width: '38rem', maxWidth: '96vw' }"
+  appendTo="body"
   (onHide)="closeCreateDialog()"
 >
   <form [formGroup]="createForm" (ngSubmit)="saveCreate()" class="flex flex-column gap-3 pt-1">
@@ -489,6 +490,7 @@
   [draggable]="false"
   [resizable]="false"
   [style]="{ width: '800px', minWidth: '800px', maxWidth: '90vw' }"
+  appendTo="body"
   (onHide)="closeDetailDialog()"
 >
 

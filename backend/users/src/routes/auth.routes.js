@@ -34,16 +34,37 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 
     const groups = (miembros ?? []).map(m => ({ id: m.grupos.id, name: m.grupos.nombre }));
 
+    // Obtener permisos por grupo del usuario
+    const { data: userGroupPerms } = await supabase
+        .from('grupo_usuario_permisos')
+        .select('grupo_id, permisos(codigo)')
+        .eq('usuario_id', user.id);
+
+    // Construir objeto de permisos por grupo: { grupoId: [perm1, perm2, ...] }
+    const permissionsByGroup = {};
+    (userGroupPerms ?? []).forEach(row => {
+        const groupId = row.grupo_id;
+        const permCode = row.permisos?.codigo;
+        if (permCode) {
+            if (!permissionsByGroup[groupId]) {
+                permissionsByGroup[groupId] = [];
+            }
+            permissionsByGroup[groupId].push(permCode);
+        }
+    });
+
     const token = signToken({
         userId:      user.id,
         username:    user.username,
-        permissions: user.permisos_globales ?? []
+        permissions: user.permisos_globales ?? [],
+        groupPermissions: permissionsByGroup  // Permisos por grupo incluidos en JWT
     });
 
     return ok(res, 200, 'SxAS200', [{
         token,
         user: {
             id:          user.id,
+            username:    user.username,
             name:        user.nombre_completo ?? user.username,
             email:       user.email,
             telefono:    user.telefono,

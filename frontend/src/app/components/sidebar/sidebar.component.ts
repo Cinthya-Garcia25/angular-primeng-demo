@@ -10,7 +10,6 @@ import { DynamicPermissionsService } from '../../services/dynamic-permissions.se
 import { Permission } from '../../models/permissions.model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-sidebar',
@@ -59,6 +58,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   private updateMenuItems(canAdmin: boolean, canGroups: boolean, canUsers: boolean, canProfile: boolean): void {
+    // Preserve the current expanded state so permission refreshes don't collapse the menu
+    const adminExpanded = this.menuItems.find(i => i.label === 'Administración')?.expanded ?? false;
 
     this.menuItems = [
       {
@@ -70,7 +71,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         label: 'Administración',
         icon: 'pi pi-shield',
         visible: canAdmin,
-        expanded: false,
+        expanded: adminExpanded,
         items: [
           {
             label: 'Grupos',

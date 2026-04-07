@@ -1,19 +1,42 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { Subject } from 'rxjs';
+
+/** Claves de cache — deben coincidir con las de DynamicPermissionsService */
+const CACHE_USER  = 'perm_cache_user';
+const CACHE_GROUP = 'perm_cache_group';
+
+function readCache(key: string): string[] {
+    try {
+        const raw = sessionStorage.getItem(key);
+        return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+        return [];
+    }
+}
 
 @Injectable({ providedIn: 'root' })
 export class PermissionsService {
 
-    private userPermissions  = signal<string[]>([]);
-    private groupPermissions = signal<string[]>([]);
+    /**
+     * Inicializamos los signals directamente desde el cache de sessionStorage.
+     * Esto garantiza que NUNCA partan de [] tras un page-refresh:
+     * el valor correcto está disponible antes del primer render,
+     * evitando ExpressionChangedAfterItHasBeenCheckedError (NG0100).
+     */
+    private userPermissions  = signal<string[]>(readCache(CACHE_USER));
+    private groupPermissions = signal<string[]>(readCache(CACHE_GROUP));
 
-    constructor() {
-        // Ya no usamos sessionStorage, dependemos del DynamicPermissionsService
-    }
+    /** Emite cada vez que los permisos cambian — la directiva se suscribe a esto. */
+    private readonly _changed$ = new Subject<void>();
+    readonly changed$ = this._changed$.asObservable();
+
+    constructor() {}
 
     // ── Permisos globales ──────────────────────────────────────────────────
 
     setPermissions(perms: string[]) {
         this.userPermissions.set(perms);
+        this._changed$.next();
     }
 
     clearPermissions() {
@@ -29,10 +52,12 @@ export class PermissionsService {
 
     setGroupPermissions(perms: string[]) {
         this.groupPermissions.set(perms);
+        this._changed$.next();
     }
 
     clearGroupPermissions() {
         this.groupPermissions.set([]);
+        this._changed$.next();
     }
 
     getGroupPermissions(): string[] {

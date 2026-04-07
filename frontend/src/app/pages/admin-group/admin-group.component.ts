@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AvatarModule } from 'primeng/avatar';
@@ -10,6 +10,7 @@ import { DividerModule } from 'primeng/divider';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
@@ -17,11 +18,9 @@ import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
-import { HasPermissionDirective } from '../../directives/has-permission.directive';
-import { PermissionsService } from '../../services/permissions.service';
-import { Permission } from '../../models/permissions.model';
 import { GroupsService, Group, GroupMember } from '../../services/groups.service';
 import { UsersService, User } from '../../services/users.service';
+import { DynamicPermissionsService } from '../../services/dynamic-permissions.service';
 
 const ALL_PERMISSIONS: { label: string; value: string; group: string }[] = [
   { label: 'Ver grupos',             value: 'group:view',          group: 'Grupos' },
@@ -49,20 +48,20 @@ const ALL_PERMISSIONS: { label: string; value: string; group: string }[] = [
     CommonModule, FormsModule, ReactiveFormsModule,
     AvatarModule, ButtonModule, CardModule, ChipModule,
     DialogModule, DividerModule, IconFieldModule, InputIconModule,
-    InputTextModule, SelectModule, TableModule, TagModule,
-    TextareaModule, ToastModule, TooltipModule,
-    HasPermissionDirective,
+    InputTextModule, MessageModule, SelectModule, TableModule,
+    TagModule, TextareaModule, ToastModule, TooltipModule
   ],
   providers: [MessageService],
   templateUrl: './admin-group.component.html',
   styleUrl:    './admin-group.component.css',
 })
 export class AdminGroupComponent implements OnInit {
-  private readonly groupsSvc = inject(GroupsService);
-  private readonly usersSvc  = inject(UsersService);
-  private readonly msgSvc    = inject(MessageService);
-  private readonly perms     = inject(PermissionsService);
-  private readonly fb        = inject(FormBuilder);
+  private readonly groupsSvc    = inject(GroupsService);
+  private readonly usersSvc     = inject(UsersService);
+  private readonly msgSvc       = inject(MessageService);
+  private readonly fb           = inject(FormBuilder);
+  private readonly cdr          = inject(ChangeDetectorRef);
+  private readonly dynPermsSvc  = inject(DynamicPermissionsService);
 
   // ── Lista de grupos ──────────────────────────────────────────────────────
   groups: Group[]  = [];
@@ -113,11 +112,6 @@ export class AdminGroupComponent implements OnInit {
     return ALL_PERMISSIONS.filter(p => p.group === group);
   }
 
-  // ── Permisos del usuario logueado ────────────────────────────────────────
-  get canAdd()    { return this.perms.hasPermission(Permission.GROUP_ADD);    }
-  get canEdit()   { return this.perms.hasPermission(Permission.GROUP_EDIT);   }
-  get canDelete() { return this.perms.hasPermission(Permission.GROUP_DELETE); }
-
   get filteredGroups(): Group[] {
     const q = this.searchValue.trim().toLowerCase();
     if (!q) return this.groups;
@@ -127,17 +121,26 @@ export class AdminGroupComponent implements OnInit {
   }
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
-  ngOnInit(): void { this.loadGroups(); }
+  ngOnInit(): void {
+    this.dynPermsSvc.isReady().subscribe(() => {
+        this.loadGroups();
+    });
+  }
 
   // ── CRUD grupos ──────────────────────────────────────────────────────────
   loadGroups(): void {
     this.loading = true;
     this.groupsSvc.getAll().subscribe({
-      next: (data) => { this.groups = data; this.loading = false; },
-      error: () => {
-        this.toast('error', 'Error', 'No se pudieron cargar los grupos');
-        this.loading = false;
-      },
+        next: (data) => {
+            this.groups = data;
+            this.loading = false;
+            this.cdr.detectChanges();
+        },
+        error: () => {
+            this.toast('error', 'Error', 'No se pudieron cargar los grupos');
+            this.loading = false;
+            this.cdr.detectChanges();
+        }
     });
   }
 
@@ -203,10 +206,12 @@ export class AdminGroupComponent implements OnInit {
       next: (detail) => {
         this.members = detail?.miembros ?? [];
         this.loadingMembers = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.toast('error', 'Error', 'No se pudieron cargar los miembros');
         this.loadingMembers = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -215,13 +220,19 @@ export class AdminGroupComponent implements OnInit {
     this.selectedUserId = '';
     this.loadingUsers   = true;
     this.addMemberDialogVisible = true;
+    
+    // Cargar usuarios inmediatamente
     this.usersSvc.getAll().subscribe({
       next: (res: any) => {
-        // Compatibilidad: la respuesta puede ser array o { data: [...] }
         this.allUsers = Array.isArray(res) ? res : (res?.data ?? []);
         this.loadingUsers = false;
+        this.cdr.detectChanges();
       },
-      error: () => { this.loadingUsers = false; },
+      error: () => { 
+        this.allUsers = [];
+        this.loadingUsers = false;
+        this.cdr.detectChanges();
+      },
     });
   }
 
@@ -274,10 +285,12 @@ export class AdminGroupComponent implements OnInit {
           this.editingMember!.permisos = [...this.selectedPerms];
           this.permsDialogVisible = false;
           this.savingPerms = false;
+          this.cdr.detectChanges();
         },
         error: () => {
           this.toast('error', 'Error', 'No se pudieron guardar los permisos');
           this.savingPerms = false;
+          this.cdr.detectChanges();
         },
       });
   }

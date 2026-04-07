@@ -59,11 +59,15 @@ export class AuthService {
                 };
                 localStorage.setItem('authUserData', JSON.stringify(userData));
 
-                // Cargar permisos del JWT como estado inicial
-                this.permissionsSvc.setPermissions(payload.user.permissions as string[]);
+                // Cargar permisos del JWT como estado inicial y persistir en cache
+                // para que sobrevivan al primer page-refresh sin esperar el poll.
+                const initialPerms = payload.user.permissions as string[];
+                this.permissionsSvc.setPermissions(initialPerms);
+                sessionStorage.setItem('perm_cache_user',  JSON.stringify(initialPerms));
+                sessionStorage.setItem('perm_cache_group', JSON.stringify([]));
 
                 // Forzar recarga inmediata desde DB para tener permisos frescos
-                this.dynamicPermsSvc.forceReload();
+                this.dynamicPermsSvc.forceReload().subscribe();
             })
         );
     }
@@ -84,7 +88,7 @@ export class AuthService {
 
     logout(): void {
         this.deleteCookie(TOKEN_COOKIE);
-        sessionStorage.clear();
+        sessionStorage.clear();          // limpia también perm_cache_user / perm_cache_group
         localStorage.removeItem('authUserData');
         this.permissionsSvc.clearPermissions();
     }

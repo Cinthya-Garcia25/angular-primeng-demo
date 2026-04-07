@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { CardModule } from 'primeng/card';
@@ -16,9 +17,7 @@ import { ChipModule } from 'primeng/chip';
 import { DividerModule } from 'primeng/divider';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
-import { Permission } from '../../models/permissions.model';
-import { HasPermissionDirective } from '../../directives/has-permission.directive';
-import { PermissionsService } from '../../services/permissions.service';
+import { DynamicPermissionsService } from '../../services/dynamic-permissions.service';
 
 interface ManagedUser {
   id: string;
@@ -26,7 +25,7 @@ interface ManagedUser {
   email: string;
   nombre_completo: string | null;
   is_active: boolean;
-  permisos_globales: Permission[];
+  permisos_globales: string[];
 }
 
 interface GroupWithPerms {
@@ -43,12 +42,11 @@ interface GroupOption {
 @Component({
   selector: 'app-user-management-page',
   imports: [
-    FormsModule, ReactiveFormsModule,
+    CommonModule, FormsModule, ReactiveFormsModule,
     CardModule, ButtonModule, InputTextModule, TableModule,
     DialogModule, ToastModule, CheckboxModule, PasswordModule,
     MultiSelectModule, TagModule, ChipModule, DividerModule,
-    IconFieldModule, InputIconModule,
-    HasPermissionDirective
+    IconFieldModule, InputIconModule
   ],
   providers: [MessageService],
   templateUrl: './user-management.page.html',
@@ -58,7 +56,8 @@ export class UserManagementPageComponent implements OnInit {
   private readonly fb             = inject(FormBuilder);
   private readonly messageService = inject(MessageService);
   private readonly http           = inject(HttpClient);
-  private readonly perms          = inject(PermissionsService);
+  private readonly cdr            = inject(ChangeDetectorRef);
+  private readonly dynPermsSvc    = inject(DynamicPermissionsService);
 
   users: ManagedUser[]       = [];
   availableGroups: GroupOption[] = [];
@@ -74,26 +73,12 @@ export class UserManagementPageComponent implements OnInit {
   groupPermissions: Record<string, string[]> = {};
   loadingGroupPerms = false;
 
-  readonly allPermissions = Object.values(Permission);
-
-  get canManageGroupPerms(): boolean {
-    return this.perms.hasPermission('users:manage' as Permission);
-  }
-
-  get canAddUser(): boolean {
-    return this.perms.hasPermission(Permission.USER_ADD) || 
-           this.perms.hasPermission('users:manage' as Permission);
-  }
-
-  get canEditUser(): boolean {
-    return this.perms.hasPermission(Permission.USER_EDIT) || 
-           this.perms.hasPermission('users:manage' as Permission);
-  }
-
-  get canRemoveUser(): boolean {
-    return this.perms.hasPermission(Permission.USER_REMOVE) || 
-           this.perms.hasPermission('users:manage' as Permission);
-  }
+  readonly allPermissions = [
+    'group:view', 'group:add', 'group:edit', 'group:remove',
+    'ticket:view', 'tickets:view', 'ticket:add', 'ticket:edit', 'ticket:edit:state', 'ticket:edit:delete',
+    'user:view', 'user:view:all', 'user:add', 'user:edit', 'user:remove',
+    'permissions:manage'
+  ];
 
   getPermissionLabel(perm: string): string {
     const labels: Record<string, string> = {
@@ -115,20 +100,30 @@ export class UserManagementPageComponent implements OnInit {
     email:           ['', [Validators.required, Validators.email]],
     password:        [''],
     is_active:       [true],
-    permissions:     this.fb.control<Permission[]>([]),
+    permissions:     this.fb.control<string[]>([]),
     group_ids:       this.fb.control<string[]>([])
   });
 
   ngOnInit(): void {
-    this.loadUsers();
-    this.loadGroups();
+    this.dynPermsSvc.isReady().subscribe(() => {
+        this.loadUsers();
+        this.loadGroups();
+    });
   }
 
   loadUsers(): void {
     this.loading = true;
     this.http.get<{ data: ManagedUser[] }>('/api/users').subscribe({
-      next:  (res) => { this.users = res.data ?? []; this.loading = false; },
-      error: ()    => { this.users = [];             this.loading = false; }
+        next: (res) => {
+            this.users = res.data ?? [];
+            this.loading = false;
+            this.cdr.detectChanges();
+        },
+        error: () => {
+            this.users = [];
+            this.loading = false;
+            this.cdr.detectChanges();
+        }
     });
   }
 
@@ -157,8 +152,8 @@ export class UserManagementPageComponent implements OnInit {
     this.userForm.reset({
       username: '', nombre_completo: '', email: '', password: '', is_active: true,
       permissions: [
-        Permission.GROUP_VIEW, Permission.TICKET_VIEW,
-        Permission.TICKET_EDIT_STATE, Permission.USER_VIEW, Permission.USER_EDIT
+        'group:view', 'ticket:view',
+        'ticket:edit:state', 'user:view', 'user:edit'
       ],
       group_ids: []
     });
@@ -176,45 +171,45 @@ export class UserManagementPageComponent implements OnInit {
     this.groupPermissions  = {};
     this.loadingGroupPerms = true;
 
+    // Abrir diálogo inmediatamente
+    this.userDialogVisible = true;
+    
+    // Resetear formulario con datos básicos
+    this.userForm.reset({
+      username:        user.username,
+      nombre_completo: user.nombre_completo ?? '',
+      email:           user.email,
+      password:        '',
+      is_active:       user.is_active,
+      permissions:     [...user.permisos_globales],
+      group_ids:       []
+    });
+
+    // Cargar datos adicionales en segundo plano
     this.http.get<any>(`/api/users/${user.id}`).subscribe({
       next: (res) => {
-        // Respuesta puede venir como { data: [...] } o directamente el objeto
         const data: any = res?.data?.[0] ?? res;
         const currentGroupIds: string[] = (data.groups ?? []).map((g: any) => g.id);
 
-        // Guardar grupos con sus permisos específicos
         this.editingUserGroups = data.groups ?? [];
         const initialPerms: Record<string, string[]> = {};
         for (const g of this.editingUserGroups) {
           initialPerms[g.id] = [...(g.permisos ?? [])];
         }
-        this.groupPermissions  = initialPerms;
+        this.groupPermissions = initialPerms;
         this.loadingGroupPerms = false;
 
-        this.userForm.reset({
-          username:        user.username,
-          nombre_completo: data.nombre_completo ?? user.nombre_completo ?? '',
-          email:           user.email,
-          password:        '',
-          is_active:       user.is_active,
-          permissions:     [...user.permisos_globales],
-          group_ids:       currentGroupIds
-        });
+        // Actualizar formulario con grupos si ya está abierto el diálogo
+        this.userForm.patchValue({ group_ids: currentGroupIds });
       },
       error: () => {
         this.loadingGroupPerms = false;
-        this.userForm.reset({
-          username: user.username, nombre_completo: user.nombre_completo ?? '',
-          email: user.email, password: '', is_active: user.is_active,
-          permissions: [...user.permisos_globales], group_ids: []
-        });
       }
     });
 
     this.userForm.controls.password.clearValidators();
     this.userForm.controls.password.updateValueAndValidity();
     this.userForm.controls.username.disable();
-    this.userDialogVisible = true;
   }
 
   closeDialog(): void {
@@ -282,7 +277,7 @@ export class UserManagementPageComponent implements OnInit {
 
   // ── Helpers permisos globales ─────────────────────────────────────────────
 
-  togglePermission(permission: Permission): void {
+  togglePermission(permission: string): void {
     const current = this.userForm.value.permissions ?? [];
     const idx = current.indexOf(permission);
     this.userForm.patchValue({
@@ -290,7 +285,7 @@ export class UserManagementPageComponent implements OnInit {
     });
   }
 
-  hasPermissionSelected(permission: Permission): boolean {
+  hasPermissionSelected(permission: string): boolean {
     return (this.userForm.value.permissions ?? []).includes(permission);
   }
 

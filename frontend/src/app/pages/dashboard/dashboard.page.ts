@@ -18,6 +18,7 @@ import { DividerModule } from 'primeng/divider';
 // Servicios y modelos
 import { TicketsService, Ticket } from '../../services/tickets.service';
 import { GroupsService } from '../../services/groups.service';
+import { DynamicPermissionsService } from '../../services/dynamic-permissions.service';
 import { AuthGroup } from '../../models/auth.model';
 
 // ── Helpers de estado ────────────────────────────────────────────────────────
@@ -75,9 +76,10 @@ const GROUP_COLORS = [
   styleUrl: './dashboard.page.css'
 })
 export class DashboardComponent implements OnInit {
-  private readonly ticketsSvc = inject(TicketsService);
-  private readonly groupsSvc = inject(GroupsService);
-  private readonly router = inject(Router);
+  private readonly ticketsSvc   = inject(TicketsService);
+  private readonly groupsSvc    = inject(GroupsService);
+  private readonly router       = inject(Router);
+  private readonly dynamicPerms = inject(DynamicPermissionsService);
 
   // ── Constantes expuestas para el template ──────────────────────────────────
   readonly STATUS_ACCENT = STATUS_ACCENT;
@@ -240,8 +242,13 @@ export class DashboardComponent implements OnInit {
 
   // ── Ciclo de vida ────────────────────────────────────────────────────────
   ngOnInit(): void {
-    // Cargar tickets de todos los grupos para mostrar estadísticas generales
+    // Cargar tickets inmediatamente, no esperar a permisos
     this.loadAllTickets();
+    
+    // Refrescar permisos en segundo plano si es necesario
+    this.dynamicPerms.isReady().subscribe(() => {
+      // Opcional: recargar si los permisos afectan lo que se muestra
+    });
   }
 
   // ── Carga de tickets de todos los grupos ──────────────────────────────────

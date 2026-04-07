@@ -2,6 +2,49 @@ const { supabase }  = require('../config/database');
 const jwt           = require('jsonwebtoken');
 const { ok, fail }  = require('../utils/respond');
 
+// ── JSON Schemas para validación ───────────────────────────────────────────
+const createTicketSchema = {
+  type: 'object',
+  required: ['grupo_id', 'titulo'],
+  additionalProperties: false,
+  properties: {
+    grupo_id:      { type: 'string', format: 'uuid' },
+    titulo:        { type: 'string', minLength: 1, maxLength: 500 },
+    descripcion:   { type: 'string', maxLength: 1000 },
+    estado_id:     { type: 'string', format: 'uuid' },
+    estado_codigo: { type: 'string', enum: ['pendiente', 'en_progreso', 'revision', 'hecho', 'bloqueado'] },
+    prioridad_id:     { type: 'string', format: 'uuid' },
+    prioridad_codigo: { type: 'string', enum: ['alta', 'media', 'baja'] },
+    asignado_id:   { type: 'string', format: 'uuid' },
+    fecha_final:   { type: 'string', format: 'date-time' }
+  }
+};
+
+const updateTicketSchema = {
+  type: 'object',
+  minProperties: 1,
+  additionalProperties: false,
+  properties: {
+    titulo:        { type: 'string', minLength: 1, maxLength: 500 },
+    descripcion:   { type: 'string', maxLength: 1000 },
+    estado_id:     { type: 'string', format: 'uuid' },
+    estado_codigo: { type: 'string', enum: ['pendiente', 'en_progreso', 'revision', 'hecho', 'bloqueado'] },
+    prioridad_id:     { type: 'string', format: 'uuid' },
+    prioridad_codigo: { type: 'string', enum: ['alta', 'media', 'baja'] },
+    asignado_id:   { type: 'string', format: 'uuid' },
+    fecha_final:   { type: 'string', format: 'date-time' }
+  }
+};
+
+const addCommentSchema = {
+  type: 'object',
+  required: ['text'],
+  additionalProperties: false,
+  properties: {
+    text: { type: 'string', minLength: 1, maxLength: 500 }
+  }
+};
+
 function verifyToken(req) {
     const header = req.headers.authorization ?? '';
     if (!header.startsWith('Bearer ')) return null;
@@ -29,13 +72,14 @@ async function fetchPerms(userId, groupId) {
     let perms = data.permisos_globales ?? [];
 
     if (groupId) {
-        const { data: member } = await supabase
-            .from('grupo_miembros')
-            .select('permisos')
+        const { data: permsData } = await supabase
+            .from('grupo_usuario_permisos')
+            .select('permisos:permiso_id(codigo)')
             .eq('usuario_id', userId)
-            .eq('grupo_id', groupId)
-            .maybeSingle();
-        perms = [...new Set([...perms, ...(member?.permisos ?? [])])];
+            .eq('grupo_id', groupId);
+        
+        const groupPerms = (permsData ?? []).map(p => p.permisos.codigo);
+        perms = [...new Set([...perms, ...groupPerms])];
     }
 
     return perms;
@@ -62,12 +106,18 @@ async function ticketsRoutes(fastify) {
         // Cargar permisos actuales desde DB (no desde el JWT)
         const groupId = req.headers['x-group-id'];
         req.user.permissions = await fetchPerms(req.user.userId, groupId);
+        
+        // Debug logging
+        console.log(`[DEBUG] User: ${req.user.userId}, Group: ${groupId}, Perms: ${JSON.stringify(req.user.permissions)}`);
     });
 
     // GET /api/tickets?grupo_id=xxx
     fastify.get('/', async (req, reply) => {
+        console.log(`[DEBUG] GET /api/tickets - User perms: ${JSON.stringify(req.user.permissions)}`);
+        
         if (!req.user.permissions.includes('tickets:view') &&
             !req.user.permissions.includes('ticket:view')) {
+            console.log(`[DEBUG] Permission denied - no ticket:view or tickets:view`);
             return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:view');
         }
 
@@ -96,7 +146,7 @@ async function ticketsRoutes(fastify) {
     });
 
     // POST /api/tickets  — requiere ticket:add
-    fastify.post('/', async (req, reply) => {
+    fastify.post('/', { schema: { body: createTicketSchema } }, async (req, reply) => {
         if (!req.user.permissions.includes('ticket:add')) {
             return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:add');
         }
@@ -143,7 +193,7 @@ async function ticketsRoutes(fastify) {
     });
 
     // PUT /api/tickets/:id  — requiere ticket:edit
-    fastify.put('/:id', async (req, reply) => {
+    fastify.put('/:id', { schema: { body: updateTicketSchema } }, async (req, reply) => {
         if (!req.user.permissions.includes('ticket:edit')) {
             return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:edit');
         }
@@ -227,7 +277,7 @@ async function ticketsRoutes(fastify) {
     });
 
     // POST /api/tickets/:id/comments  — requiere ticket:edit:comment
-    fastify.post('/:id/comments', async (req, reply) => {
+    fastify.post('/:id/comments', { schema: { body: addCommentSchema } }, async (req, reply) => {
         if (!req.user.permissions.includes('ticket:edit:comment')) {
             return fail(reply, 403, 'SxCS403', 'Permiso requerido: ticket:edit:comment');
         }

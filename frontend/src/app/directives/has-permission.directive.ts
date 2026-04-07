@@ -1,10 +1,14 @@
-import { Directive, effect, Input, OnChanges, TemplateRef, ViewContainerRef } from '@angular/core';
+import { Directive, DestroyRef, Input, OnChanges, OnInit, TemplateRef, ViewContainerRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PermissionsService } from '../services/permissions.service';
 
 /**
- * Directiva estructural reactiva.
- * Se re-evalúa automáticamente cada vez que cambian los signals de PermissionsService
- * (por ejemplo, tras un poll de DynamicPermissionsService que actualiza permisos desde DB).
+ * Directiva estructural que muestra/oculta contenido según permisos.
+ *
+ * Usa una suscripción explícita a PermissionsService.changed$ en lugar de
+ * effect() de signals, para evitar que la re-evaluación se encadene al ciclo
+ * de change-detection de Angular y destruya el elemento justo cuando el usuario
+ * hace clic (causa del bug de "doble clic").
  *
  * Uso:
  *   <div *ifHasPermission="'ticket:add'">…</div>
@@ -14,34 +18,35 @@ import { PermissionsService } from '../services/permissions.service';
     selector: '[ifHasPermission]',
     standalone: true
 })
-export class HasPermissionDirective implements OnChanges {
+export class HasPermissionDirective implements OnInit, OnChanges {
 
     @Input('ifHasPermission') permisos: string | string[] = '';
 
     private hasView = false;
 
-    constructor(
-        private permissionsSvc: PermissionsService,
-        private templateRef: TemplateRef<any>,
-        private viewContainer: ViewContainerRef
-    ) {
-        // effect() se re-ejecuta cada vez que un signal leído dentro cambia.
-        // hasAnyPermission() lee userPermissions() y groupPermissions() internamente,
-        // por lo que este effect reacciona a cualquier cambio de permisos.
-        effect(() => this.updateView());
+    private readonly permissionsSvc = inject(PermissionsService);
+    private readonly templateRef    = inject(TemplateRef<any>);
+    private readonly viewContainer  = inject(ViewContainerRef);
+    private readonly destroyRef     = inject(DestroyRef);
+
+    ngOnInit(): void {
+        // Evaluación inicial
+        this.updateView();
+
+        // Re-evaluar solo cuando los permisos cambian explícitamente,
+        // sin depender del scheduler de signals/effects de Angular.
+        this.permissionsSvc.changed$.pipe(
+            takeUntilDestroyed(this.destroyRef)
+        ).subscribe(() => this.updateView());
     }
 
-    // También reacciona si el input @Input cambia en runtime
-    ngOnChanges() {
+    ngOnChanges(): void {
         this.updateView();
     }
 
     private updateView(): void {
-        const permisosArray = Array.isArray(this.permisos)
-            ? this.permisos
-            : [this.permisos];
-
-        const shouldShow = this.permissionsSvc.hasAnyPermission(permisosArray);
+        const list = Array.isArray(this.permisos) ? this.permisos : [this.permisos];
+        const shouldShow = this.permissionsSvc.hasAnyPermission(list);
 
         if (shouldShow && !this.hasView) {
             this.viewContainer.createEmbeddedView(this.templateRef);

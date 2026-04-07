@@ -65,7 +65,7 @@
 </section>
 
 
-<p-dialog header="Añadir Usuario" [(visible)]="addUserDialogVisible" [modal]="true" [style]="{width: '30rem'}">
+<p-dialog header="Añadir Usuario" [(visible)]="addUserDialogVisible" [modal]="true" [style]="{width: '30rem'}" appendTo="body">
   <form [formGroup]="addUserForm" (ngSubmit)="addUser()" class="add-user-form">
     <div class="field">
       <label for="email">Email del Usuario</label>

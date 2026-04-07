@@ -67,7 +67,7 @@
 </section>
 
 <p-dialog [header]="isEditing ? 'Editar Grupo' : 'Nuevo Grupo'" [(visible)]="dialogVisible" [modal]="true"
-  [draggable]="false" [resizable]="false" [style]="{ width: '36rem', maxWidth: '95vw' }" (onHide)="closeDialog()">
+  [draggable]="false" [resizable]="false" [style]="{ width: '36rem', maxWidth: '95vw' }" appendTo="body" (onHide)="closeDialog()">
   <form [formGroup]="groupForm" (ngSubmit)="saveGroup()" class="group-form">
     <div class="form-row two-cols">
       <div class="field-col">
@@ -135,7 +135,7 @@
 </p-dialog>
 
 <p-dialog header="Confirmar Eliminacion" [(visible)]="deleteDialogVisible" [modal]="true" [draggable]="false"
-  [resizable]="false" [style]="{ width: '28rem', maxWidth: '95vw' }" (onHide)="closeDeleteDialog()">
+  [resizable]="false" [style]="{ width: '28rem', maxWidth: '95vw' }" appendTo="body" (onHide)="closeDeleteDialog()">
   <div class="delete-confirm-content">
     <i class="pi pi-exclamation-triangle"></i>
     <p>Estas seguro de que deseas eliminar el grupo "{{ groupToDelete?.name }}"?</p>

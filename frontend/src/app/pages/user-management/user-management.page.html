@@ -9,7 +9,7 @@
         <input pInputText type="text" placeholder="Buscar usuarios..." [(ngModel)]="searchValue"
           aria-label="Buscar usuarios" />
       </p-iconfield>
-      <button [disabled]="!canAddUser" pButton icon="pi pi-user-plus" label="Nuevo Usuario"
+      <button pButton icon="pi pi-user-plus" label="Nuevo Usuario"
         (click)="openCreateDialog()"></button>
     </div>
   </div>
@@ -45,9 +45,9 @@
           </td>
           <td>
             <div class="action-buttons">
-              <button [disabled]="!canEditUser" pButton type="button" icon="pi pi-pencil" severity="secondary"
+              <button pButton type="button" icon="pi pi-pencil" severity="secondary"
                 text (click)="openEditDialog(user)"></button>
-              <button [disabled]="!canRemoveUser || user.username === 'superadmin'" pButton type="button" icon="pi pi-trash" severity="danger"
+              <button [disabled]="user.username === 'superadmin'" pButton type="button" icon="pi pi-trash" severity="danger"
                 text (click)="deleteUser(user)"></button>
             </div>
           </td>
@@ -67,6 +67,7 @@
           [(visible)]="userDialogVisible"
           [modal]="true"
           [style]="{width: '45rem', maxWidth: '95vw'}"
+          appendTo="body"
           (onHide)="closeDialog()">
 
   <form [formGroup]="userForm" (ngSubmit)="saveUser()" class="user-form">
@@ -145,7 +146,7 @@
     </div>
 
     <!-- Permisos por grupo (solo edición + users:manage) -->
-    @if (isEditing && canManageGroupPerms) {
+    @if (isEditing) {
       <p-divider></p-divider>
       <div class="group-perms-section">
         <h3 class="section-title">Permisos por Grupo</h3>

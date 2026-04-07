@@ -407,10 +407,11 @@ export class GroupDashboardPageComponent implements OnInit {
     if (saved) {
       this.selectedGroup = saved;
       this.loadGroupMembers(saved.id);
-      // Obtener permisos frescos de DB antes de cargar tickets
+      this.loadTickets(); // Cargar inmediatamente
+      
+      // Refrescar permisos en segundo plano
       this.dynamicPermsSvc.refreshPermissions().subscribe({
-        next:  () => this.loadTickets(),
-        error: () => this.loadTickets()
+        error: () => {} // Manejar error silenciosamente
       });
     }
   }
@@ -421,20 +422,19 @@ export class GroupDashboardPageComponent implements OnInit {
     sessionStorage.setItem('selectedGroupId',   group.id);
     sessionStorage.setItem('selectedGroupName', group.name);
 
-    // Una sola llamada obtiene permisos globales + de grupo desde DB
+    // Cargar datos inmediatamente
+    this.selectedGroup = group;
+    this.loadGroupMembers(group.id);
+    this.loadTickets();
+    
+    // Refrescar permisos en segundo plano
     this.dynamicPermsSvc.refreshPermissions().subscribe({
       next: () => {
         this.loadingGroupPerms = false;
-        this.selectedGroup = group;
-        this.loadGroupMembers(group.id);
-        this.loadTickets();
       },
       error: () => {
         this.permsSvc.clearGroupPermissions();
         this.loadingGroupPerms = false;
-        this.selectedGroup = group;
-        this.loadGroupMembers(group.id);
-        this.loadTickets();
       }
     });
   }
@@ -445,12 +445,12 @@ export class GroupDashboardPageComponent implements OnInit {
     sessionStorage.setItem('selectedGroupName', group.name);
     this.selectedGroup = group;
     this.loadGroupMembers(group.id);
+    this.loadTickets(); // Cargar inmediatamente
 
+    // Refrescar permisos en segundo plano
     this.dynamicPermsSvc.refreshPermissions().subscribe({
       error: () => this.permsSvc.clearGroupPermissions()
     });
-
-    this.loadTickets();
   }
 
   private loadGroupMembers(groupId: string): void {
@@ -570,8 +570,12 @@ export class GroupDashboardPageComponent implements OnInit {
   // ── Drag & Drop Kanban ───────────────────────────────────────────────────
   draggedTicketId:  string | null = null;
   dropTargetStatus: string | null = null;
+  isDragging: boolean = false;
+  dragStartTime: number = 0;
 
   onDragStart(event: DragEvent, ticket: Ticket): void {
+    this.isDragging = true;
+    this.dragStartTime = Date.now();
     this.draggedTicketId = ticket.id;
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
@@ -623,8 +627,22 @@ export class GroupDashboardPageComponent implements OnInit {
   }
 
   onDragEnd(): void {
+    this.isDragging = false;
     this.draggedTicketId  = null;
     this.dropTargetStatus = null;
+  }
+
+  // Manejador de clic que distingue entre clic simple y arrastre
+  onTicketClick(ticket: Ticket): void {
+    // Si venimos de un arrastre, ignorar el clic
+    if (this.isDragging) return;
+    
+    // Pequeño delay para asegurar que no es el inicio de un arrastre
+    setTimeout(() => {
+      if (!this.isDragging) {
+        this.openDetailDialog(ticket);
+      }
+    }, 50);
   }
 
   // ── Helpers de grupo ─────────────────────────────────────────────────────

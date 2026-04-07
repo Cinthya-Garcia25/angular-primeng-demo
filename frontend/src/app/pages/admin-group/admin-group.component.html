@@ -7,7 +7,7 @@
       <h2 class="ag-title">Administración de Grupos</h2>
       <p class="ag-subtitle">Gestiona grupos, miembros y permisos por grupo</p>
     </div>
-    <button *ifHasPermission="'group:add'" pButton icon="pi pi-plus" label="Nuevo Grupo"
+    <button pButton icon="pi pi-plus" label="Nuevo Grupo"
             (click)="openCreateGroup()"></button>
   </div>
 
@@ -46,10 +46,10 @@
             <button pButton type="button" icon="pi pi-users" severity="info" text
                     pTooltip="Gestionar miembros" tooltipPosition="top"
                     (click)="openMembersDialog(group)"></button>
-            <button *ifHasPermission="'group:edit'" pButton type="button" icon="pi pi-pencil"
+            <button pButton type="button" icon="pi pi-pencil"
                     severity="secondary" text pTooltip="Editar grupo" tooltipPosition="top"
                     (click)="openEditGroup(group)"></button>
-            <button *ifHasPermission="'group:remove'" pButton type="button" icon="pi pi-trash"
+            <button pButton type="button" icon="pi pi-trash"
                     severity="danger" text pTooltip="Eliminar grupo" tooltipPosition="top"
                     (click)="askDeleteGroup(group)"></button>
           </td>
@@ -68,7 +68,7 @@
 <p-dialog [header]="isEditingGroup ? 'Editar Grupo' : 'Nuevo Grupo'"
           [(visible)]="groupDialogVisible" [modal]="true"
           [style]="{ width: '34rem', maxWidth: '95vw' }"
-          [draggable]="false" [resizable]="false">
+          [draggable]="false" [resizable]="false" appendTo="body">
   <form [formGroup]="groupForm" (ngSubmit)="saveGroup()" class="flex flex-column gap-3 pt-1">
 
     <div class="flex flex-column gap-1">
@@ -97,7 +97,7 @@
 <!-- ═══════════════════ DIALOG: CONFIRMAR ELIMINAR GRUPO ═══════════════════ -->
 <p-dialog header="Confirmar eliminación" [(visible)]="deleteGroupDialogVisible"
           [modal]="true" [style]="{ width: '28rem' }"
-          [draggable]="false" [resizable]="false">
+          [draggable]="false" [resizable]="false" appendTo="body">
   <div class="flex align-items-center gap-3 py-2">
     <i class="pi pi-exclamation-triangle text-4xl text-yellow-500"></i>
     <p class="m-0">¿Eliminar el grupo <strong>{{ groupToDelete?.nombre }}</strong>?
@@ -116,13 +116,13 @@
 <p-dialog [header]="'Miembros — ' + (selectedGroup?.nombre ?? '')"
           [(visible)]="membersDialogVisible" [modal]="true"
           [style]="{ width: '62rem', maxWidth: '96vw' }"
-          [draggable]="false" [resizable]="false">
+          [draggable]="false" [resizable]="false" appendTo="body">
 
   <div class="ag-members-toolbar">
     <span class="text-sm text-color-secondary">
       {{ members.length }} miembro(s) en este grupo
     </span>
-    <button *ifHasPermission="'group:edit'" pButton icon="pi pi-user-plus"
+    <button pButton icon="pi pi-user-plus"
             label="Agregar miembro" size="small" (click)="openAddMember()"></button>
   </div>
 
@@ -133,7 +133,7 @@
         <th>Email</th>
         <th>Permisos en este grupo</th>
         <th>Desde</th>
-        <th *ifHasPermission="'group:edit'" class="ag-actions-col">Acciones</th>
+        <th class="ag-actions-col">Acciones</th>
       </tr>
     </ng-template>
 
@@ -162,7 +162,7 @@
           </div>
         </td>
         <td>{{ formatDate(member.fecha_unido) }}</td>
-        <td *ifHasPermission="'group:edit'" class="ag-actions-col">
+        <td class="ag-actions-col">
           <button pButton type="button" icon="pi pi-key" severity="info" text
                   pTooltip="Editar permisos de grupo" tooltipPosition="top"
                   (click)="openPermsDialog(member)"></button>
@@ -187,7 +187,7 @@
 <!-- ═══════════════════ DIALOG: AGREGAR MIEMBRO ═══════════════════ -->
 <p-dialog header="Agregar miembro al grupo" [(visible)]="addMemberDialogVisible"
           [modal]="true" [style]="{ width: '36rem', maxWidth: '95vw' }"
-          [draggable]="false" [resizable]="false">
+          [draggable]="false" [resizable]="false" appendTo="body">
   <div class="flex flex-column gap-3 pt-1">
     <div class="flex flex-column gap-1">
       <label class="ag-label">Seleccionar usuario</label>
@@ -210,7 +210,7 @@
 <p-dialog [header]="'Permisos de grupo — ' + (editingMember?.usuarios?.username ?? '')"
           [(visible)]="permsDialogVisible" [modal]="true"
           [style]="{ width: '44rem', maxWidth: '96vw' }"
-          [draggable]="false" [resizable]="false">
+          [draggable]="false" [resizable]="false" appendTo="body">
 
   <p class="text-sm text-color-secondary mt-0 mb-3">
     Estos permisos se suman a los permisos globales del usuario,

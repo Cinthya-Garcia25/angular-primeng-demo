@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { permissionGuard } from './guards/permission.guard';
-import { Permission } from './models/permissions.model';
 
 export const routes: Routes = [
   // ── Redirección raíz ─────────────────────────────────────────────────────
@@ -56,7 +55,7 @@ export const routes: Routes = [
       {
         path: 'groups/:id/list',
         canActivate: [permissionGuard],
-        data: { permissions: [Permission.TICKET_VIEW] },
+        data: { permissions: ['ticket:view'] },
         loadComponent: () =>
           import('./pages/tickets/tickets.page').then((m) => m.TicketsPageComponent)
       },
@@ -65,7 +64,7 @@ export const routes: Routes = [
       {
         path: 'admin/groups',
         canActivate: [permissionGuard],
-        data: { permissions: [Permission.GROUP_EDIT, Permission.GROUP_ADD, Permission.GROUP_DELETE] },
+        data: { permissions: ['group:edit', 'group:add', 'group:remove'] },
         loadComponent: () =>
           import('./pages/admin-group/admin-group.component').then((m) => m.AdminGroupComponent)
       },
@@ -74,7 +73,7 @@ export const routes: Routes = [
       {
         path: 'admin/users',
         canActivate: [permissionGuard],
-        data: { permissions: [Permission.USER_VIEW_ALL, Permission.USER_ADD, Permission.USER_REMOVE] },
+        data: { permissions: ['user:view:all', 'user:add', 'user:remove'] },
         loadComponent: () =>
           import('./pages/user-management/user-management.page').then(
             (m) => m.UserManagementPageComponent

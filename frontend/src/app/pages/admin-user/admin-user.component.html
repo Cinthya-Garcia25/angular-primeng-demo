@@ -54,10 +54,11 @@
 </section>
 
 <!-- Diálogo Crear/Editar Usuario -->
-<p-dialog [header]="isEditing ? 'Editar Usuario: ' + editingUsername : 'Crear Nuevo Usuario'" 
-          [(visible)]="userDialogVisible" 
-          [modal]="true" 
+<p-dialog [header]="isEditing ? 'Editar Usuario: ' + editingUsername : 'Crear Nuevo Usuario'"
+          [(visible)]="userDialogVisible"
+          [modal]="true"
           [style]="{width: '45rem', maxWidth: '95vw'}"
+          appendTo="body"
           (onHide)="closeDialog()">
           
   <form [formGroup]="userForm" (ngSubmit)="saveUser()" class="user-form">

@@ -123,10 +123,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.loadProfile();
-    this.loadUserTickets();
-    
-    // Escuchar cambios de permisos para recargar datos del perfil
+    this.dynamicPermissionsService.isReady().subscribe(() => {
+      this.loadProfile();
+      this.loadUserTickets();
+    });
+
+    // Recargar perfil cuando los permisos cambien (ej. tras un poll de 15 s)
     this.dynamicPermissionsService.onPermissionsChanged().pipe(
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(() => {

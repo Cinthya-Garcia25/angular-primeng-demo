@@ -272,6 +272,7 @@
   [draggable]="false"
   [resizable]="false"
   [style]="{ width: '38rem', maxWidth: '95vw' }"
+  appendTo="body"
   (onHide)="closeCreateDialog()"
 >
   <form [formGroup]="createForm" (ngSubmit)="saveCreatedTicket()" class="flex flex-column gap-3 pt-2">
@@ -345,6 +346,7 @@
   [draggable]="false"
   [resizable]="false"
   [style]="{ width: '800px', minWidth: '800px', maxWidth: '90vw' }"
+  appendTo="body"
   (onHide)="closeDetailDialog()"
 >
 
