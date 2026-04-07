@@ -7,16 +7,22 @@ import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { CheckboxModule } from 'primeng/checkbox';
 import { PermissionsService } from '../../services/permissions.service';
-import { Permission } from '../../models/permissions.model';
+import { GroupsService, GroupDetail, GroupMember } from '../../services/groups.service';
 import { HasPermissionDirective } from '../../directives/has-permission.directive';
 
-interface GroupUser {
-  email: string;
-  addedAt: string;
+interface PermissionOption {
+  codigo: string;
+  nombre: string;
+  descripcion: string;
 }
 
-const GROUP_SETTINGS_KEY = 'groupSettingsDataV2';
+interface MemberWithPermissions extends GroupMember {
+  availablePermissions: PermissionOption[];
+  selectedPermissions: string[];
+}
 
 @Component({
   selector: 'app-group-settings-page',
@@ -29,6 +35,8 @@ const GROUP_SETTINGS_KEY = 'groupSettingsDataV2';
     TableModule,
     DialogModule,
     ToastModule,
+    MultiSelectModule,
+    CheckboxModule,
     HasPermissionDirective
   ],
   providers: [MessageService],
@@ -38,27 +46,74 @@ const GROUP_SETTINGS_KEY = 'groupSettingsDataV2';
 export class GroupSettingsPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly messageService = inject(MessageService);
+  private readonly permissionsSvc = inject(PermissionsService);
+  private readonly groupsSvc = inject(GroupsService);
   
   currentGroupId = '';
   groupName = '';
+  groupDescription = '';
   
-  users: GroupUser[] = [];
+  groupDetail: GroupDetail | null = null;
+  members: MemberWithPermissions[] = [];
+  availablePermissions: PermissionOption[] = [];
   
+  loading = false;
   addUserDialogVisible = false;
+  editPermissionsDialogVisible = false;
+  selectedMember: MemberWithPermissions | null = null;
   
   readonly groupForm = this.fb.group({
-    name: ['', [Validators.required, Validators.minLength(3)]]
+    name: ['', [Validators.required, Validators.minLength(3)]],
+    description: ['']
   });
 
   readonly addUserForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]]
   });
 
+  readonly permissionsForm = this.fb.group({
+    permissions: [[] as string[]]
+  });
+
   ngOnInit(): void {
-    this.currentGroupId = sessionStorage.getItem('selectedGroupId') || '1';
-    this.groupName = sessionStorage.getItem('selectedGroupName') || 'Equipo Dev';
-    this.groupForm.patchValue({ name: this.groupName });
-    this.loadUsers();
+    this.currentGroupId = sessionStorage.getItem('selectedGroupId') || '';
+    if (this.currentGroupId) {
+      this.loadGroupData();
+    }
+  }
+
+  loadGroupData(): void {
+    this.loading = true;
+    
+    // Load group details and available permissions in parallel
+    this.groupsSvc.getById(this.currentGroupId).subscribe(groupDetail => {
+      if (groupDetail) {
+        this.groupDetail = groupDetail;
+        this.groupName = groupDetail.nombre;
+        this.groupDescription = groupDetail.descripcion || '';
+        this.groupForm.patchValue({ 
+          name: this.groupName,
+          description: this.groupDescription
+        });
+        
+        // Transform members to include permission management
+        this.members = groupDetail.miembros.map(member => ({
+          ...member,
+          availablePermissions: [],
+          selectedPermissions: member.permisos || []
+        }));
+      }
+      
+      this.loading = false;
+    });
+
+    this.groupsSvc.getAvailablePermissions(this.currentGroupId).subscribe(permissions => {
+      this.availablePermissions = permissions as unknown as PermissionOption[];
+      // Update available permissions for all members
+      this.members.forEach(member => {
+        member.availablePermissions = permissions as unknown as PermissionOption[];
+      });
+    });
   }
 
   saveGroupSettings(): void {
@@ -67,14 +122,30 @@ export class GroupSettingsPageComponent implements OnInit {
       return;
     }
     
-    const newName = this.groupForm.value.name?.trim() || '';
-    this.groupName = newName;
-    sessionStorage.setItem('selectedGroupName', newName);
+    const { name, description } = this.groupForm.value;
+    this.loading = true;
     
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Configuración guardada',
-      detail: 'El nombre del grupo ha sido actualizado.'
+    this.groupsSvc.update(this.currentGroupId, { name: name || undefined, description: description || undefined }).subscribe({
+      next: () => {
+        this.groupName = name || '';
+        this.groupDescription = description || '';
+        sessionStorage.setItem('selectedGroupName', this.groupName);
+        
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Configuración guardada',
+          detail: 'La información del grupo ha sido actualizada.'
+        });
+        this.loading = false;
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar la información del grupo.'
+        });
+        this.loading = false;
+      }
     });
   }
 
@@ -93,70 +164,116 @@ export class GroupSettingsPageComponent implements OnInit {
       return;
     }
     
-    const email = this.addUserForm.value.email?.trim().toLowerCase() || '';
+    const email = this.addUserForm.value.email;
+    if (!email) return;
     
-    if (this.users.some(u => u.email === email)) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Usuario existente',
-        detail: 'Este usuario ya pertenece al grupo.'
-      });
-      return;
-    }
+    this.loading = true;
     
-    this.users = [
-      ...this.users,
-      {
-        email,
-        addedAt: new Date().toLocaleDateString('es-MX')
+    this.groupsSvc.addMember(this.currentGroupId, email).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Usuario añadido',
+          detail: 'El usuario ha sido añadido al grupo exitosamente.'
+        });
+        this.closeAddUserDialog();
+        this.loadGroupData(); // Reload to show new member
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo añadir el usuario al grupo.'
+        });
+        this.loading = false;
       }
-    ];
-    
-    this.persistUsers();
-    this.closeAddUserDialog();
-    
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Usuario añadido',
-      detail: `Se ha añadido a ${email} al grupo.`
     });
   }
 
-  removeUser(user: GroupUser): void {
-    this.users = this.users.filter(u => u.email !== user.email);
-    this.persistUsers();
+  removeUser(member: MemberWithPermissions): void {
+    this.loading = true;
     
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Usuario eliminado',
-      detail: `Se ha eliminado a ${user.email} del grupo.`
+    this.groupsSvc.removeMember(this.currentGroupId, member.usuarios.id).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Usuario eliminado',
+          detail: `${member.usuarios.username} ha sido eliminado del grupo.`
+        });
+        this.loadGroupData(); // Reload to update member list
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo eliminar al usuario del grupo.'
+        });
+        this.loading = false;
+      }
     });
   }
 
-  private loadUsers(): void {
-    const rawData = localStorage.getItem(`${GROUP_SETTINGS_KEY}_${this.currentGroupId}`);
-    if (rawData) {
-      try {
-        this.users = JSON.parse(rawData);
-      } catch {
-        this.seedUsers();
+  openEditPermissionsDialog(member: MemberWithPermissions): void {
+    this.selectedMember = member;
+    this.permissionsForm.patchValue({
+      permissions: member.selectedPermissions
+    });
+    this.editPermissionsDialogVisible = true;
+  }
+
+  closeEditPermissionsDialog(): void {
+    this.editPermissionsDialogVisible = false;
+    this.selectedMember = null;
+  }
+
+  saveMemberPermissions(): void {
+    if (!this.selectedMember || this.permissionsForm.invalid) return;
+    
+    const permissions = this.permissionsForm.value.permissions || [];
+    this.loading = true;
+    
+    this.groupsSvc.updateMemberPermissions(
+      this.currentGroupId,
+      this.selectedMember.usuarios.id,
+      permissions
+    ).subscribe({
+      next: () => {
+        if (this.selectedMember) {
+          // Update local data
+          this.selectedMember.selectedPermissions = permissions;
+          this.selectedMember.permisos = permissions;
+          
+          // Update groups service cache
+          this.groupsSvc.updateGroupPermissionsCache(this.currentGroupId, permissions);
+          
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Permisos actualizados',
+            detail: `Los permisos de ${this.selectedMember.usuarios.username} han sido actualizados.`
+          });
+        }
+        this.closeEditPermissionsDialog();
+        this.loading = false;
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron actualizar los permisos del usuario.'
+        });
+        this.loading = false;
       }
-    } else {
-      this.seedUsers();
-    }
+    });
   }
 
-  private persistUsers(): void {
-    localStorage.setItem(`${GROUP_SETTINGS_KEY}_${this.currentGroupId}`, JSON.stringify(this.users));
+  getPermissionName(codigo: string): string {
+    const permission = this.availablePermissions.find(p => p.codigo === codigo);
+    return permission ? permission.nombre : codigo;
   }
 
-  private seedUsers(): void {
-    this.users = [
-      { email: 'admin@demo.com', addedAt: '01/01/2026' },
-      { email: 'usuario1@demo.com', addedAt: '15/02/2026' },
-      { email: 'usuario2@demo.com', addedAt: '20/02/2026' }
-    ];
-    this.persistUsers();
+  getPermissionDescription(codigo: string): string {
+    const permission = this.availablePermissions.find(p => p.codigo === codigo);
+    return permission ? permission.descripcion : '';
   }
 }
 

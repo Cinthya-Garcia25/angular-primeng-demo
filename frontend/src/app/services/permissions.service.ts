@@ -89,7 +89,7 @@ export class PermissionsService {
     readonly canViewDashboard = computed(() => true);
 
     readonly canViewGroups = computed(() =>
-        this.hasAnyPermission(['group:edit', 'group:add', 'group:delete'])
+        this.hasAnyPermission(['group:view', 'group:edit', 'group:add', 'group:remove'])
     );
 
     readonly canViewGroupSettings = computed(() =>
@@ -97,11 +97,11 @@ export class PermissionsService {
     );
 
     readonly canViewUserManagement = computed(() =>
-        this.hasAnyPermission(['users:manage', 'users:view', 'user:add', 'user:delete'])
+        this.hasAnyPermission(['user:view:all', 'user:edit', 'user:add', 'user:remove', 'permissions:manage'])
     );
 
     readonly canViewTickets = computed(() =>
-        this.hasAnyPermission(['ticket:view', 'tickets:view', 'ticket:add', 'ticket:edit', 'ticket:delete', 'ticket:edit_state'])
+        this.hasAnyPermission(['ticket:view', 'tickets:view', 'ticket:add', 'ticket:edit', 'ticket:edit:delete', 'ticket:edit:state'])
     );
 
     readonly canViewAdmin = computed(() =>

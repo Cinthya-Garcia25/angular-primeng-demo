@@ -37,7 +37,7 @@
         <button *ifHasPermission="'group:add'" pButton type="button" label="Añadir Usuario" icon="pi pi-user-plus" (click)="openAddUserDialog()"></button>
       </div>
 
-      <p-table [value]="users" [paginator]="true" [rows]="5" responsiveLayout="scroll" styleClass="p-datatable-sm">
+      <p-table [value]="members" [paginator]="true" [rows]="5" responsiveLayout="scroll" styleClass="p-datatable-sm">
         <ng-template pTemplate="header">
           <tr>
             <th>Email</th>
@@ -45,12 +45,12 @@
             <th style="width: 5rem">Acciones</th>
           </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-user>
+        <ng-template pTemplate="body" let-member>
           <tr>
-            <td>{{ user.email }}</td>
-            <td>{{ user.addedAt }}</td>
+            <td>{{ member.usuarios.email }}</td>
+            <td>{{ member.fecha_adhesion || 'N/A' }}</td>
             <td>
-              <button *ifHasPermission="'group:delete'" pButton type="button" icon="pi pi-trash" severity="danger" text (click)="removeUser(user)" [disabled]="user.email === 'admin@demo.com'"></button>
+              <button *ifHasPermission="'group:delete'" pButton type="button" icon="pi pi-trash" severity="danger" text (click)="removeUser(member)" [disabled]="member.usuarios.email === 'admin@demo.com'"></button>
             </td>
           </tr>
         </ng-template>

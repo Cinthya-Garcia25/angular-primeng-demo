@@ -21,6 +21,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { GroupsService, Group, GroupMember } from '../../services/groups.service';
 import { UsersService, User } from '../../services/users.service';
 import { DynamicPermissionsService } from '../../services/dynamic-permissions.service';
+import { PermissionsService } from '../../services/permissions.service';
 
 const ALL_PERMISSIONS: { label: string; value: string; group: string }[] = [
   { label: 'Ver grupos',             value: 'group:view',          group: 'Grupos' },
@@ -62,6 +63,20 @@ export class AdminGroupComponent implements OnInit {
   private readonly fb           = inject(FormBuilder);
   private readonly cdr          = inject(ChangeDetectorRef);
   private readonly dynPermsSvc  = inject(DynamicPermissionsService);
+  private readonly permsSvc     = inject(PermissionsService);
+
+  get canCreateGroup(): boolean {
+    return this.permsSvc.hasAnyPermission(['groups:manage', 'group:add']);
+  }
+  get canEditGroup(): boolean {
+    return this.permsSvc.hasAnyPermission(['groups:manage', 'group:edit']);
+  }
+  get canDeleteGroup(): boolean {
+    return this.permsSvc.hasAnyPermission(['groups:manage', 'group:remove', 'group:delete']);
+  }
+  get canManageMembers(): boolean {
+    return this.permsSvc.hasAnyPermission(['groups:manage', 'group:edit', 'group:add']);
+  }
 
   // ── Lista de grupos ──────────────────────────────────────────────────────
   groups: Group[]  = [];
@@ -131,7 +146,7 @@ export class AdminGroupComponent implements OnInit {
   loadGroups(): void {
     this.loading = true;
     this.groupsSvc.getAll().subscribe({
-        next: (data) => {
+        next: (data: any) => {
             this.groups = data;
             this.loading = false;
             this.cdr.detectChanges();
@@ -203,7 +218,7 @@ export class AdminGroupComponent implements OnInit {
     if (!this.selectedGroup) return;
     this.loadingMembers = true;
     this.groupsSvc.getById(this.selectedGroup.id).subscribe({
-      next: (detail) => {
+      next: (detail: any) => {
         this.members = detail?.miembros ?? [];
         this.loadingMembers = false;
         this.cdr.detectChanges();
@@ -244,7 +259,7 @@ export class AdminGroupComponent implements OnInit {
         this.addMemberDialogVisible = false;
         this.refreshMembers();
       },
-      error: (err) => this.toast('error', 'Error', err?.error?.message ?? 'No se pudo agregar el usuario'),
+      error: (err: any) => this.toast('error', 'Error', err?.error?.message ?? 'No se pudo agregar el usuario'),
     });
   }
 
@@ -277,14 +292,21 @@ export class AdminGroupComponent implements OnInit {
   savePerms(): void {
     if (!this.editingMember || !this.selectedGroup) return;
     this.savingPerms = true;
+    const permissionsToSave = [...this.selectedPerms];
     this.groupsSvc
-      .updateMemberPermissions(this.selectedGroup.id, this.editingMember.usuarios.id, [...this.selectedPerms])
+      .updateMemberPermissions(this.selectedGroup.id, this.editingMember.usuarios.id, permissionsToSave)
       .subscribe({
         next: () => {
           this.toast('success', 'Guardado', 'Permisos de grupo actualizados');
-          this.editingMember!.permisos = [...this.selectedPerms];
+          this.editingMember!.permisos = permissionsToSave;
           this.permsDialogVisible = false;
           this.savingPerms = false;
+          
+          // Actualizar caché de permisos por grupo si es el usuario actual
+          if (this.selectedGroup) {
+            this.groupsSvc.updateGroupPermissionsCache(this.selectedGroup.id, permissionsToSave);
+          }
+          
           this.cdr.detectChanges();
         },
         error: () => {

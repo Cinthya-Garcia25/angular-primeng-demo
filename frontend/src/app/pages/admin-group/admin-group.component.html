@@ -7,8 +7,9 @@
       <h2 class="ag-title">Administración de Grupos</h2>
       <p class="ag-subtitle">Gestiona grupos, miembros y permisos por grupo</p>
     </div>
-    <button pButton icon="pi pi-plus" label="Nuevo Grupo"
-            (click)="openCreateGroup()"></button>
+    @if (canCreateGroup) {
+      <button pButton icon="pi pi-plus" label="Nuevo Grupo" (click)="openCreateGroup()"></button>
+    }
   </div>
 
   <!-- ═══════════════════ TABLA DE GRUPOS ═══════════════════ -->
@@ -46,12 +47,16 @@
             <button pButton type="button" icon="pi pi-users" severity="info" text
                     pTooltip="Gestionar miembros" tooltipPosition="top"
                     (click)="openMembersDialog(group)"></button>
-            <button pButton type="button" icon="pi pi-pencil"
-                    severity="secondary" text pTooltip="Editar grupo" tooltipPosition="top"
-                    (click)="openEditGroup(group)"></button>
-            <button pButton type="button" icon="pi pi-trash"
-                    severity="danger" text pTooltip="Eliminar grupo" tooltipPosition="top"
-                    (click)="askDeleteGroup(group)"></button>
+            @if (canEditGroup) {
+              <button pButton type="button" icon="pi pi-pencil"
+                      severity="secondary" text pTooltip="Editar grupo" tooltipPosition="top"
+                      (click)="openEditGroup(group)"></button>
+            }
+            @if (canDeleteGroup) {
+              <button pButton type="button" icon="pi pi-trash"
+                      severity="danger" text pTooltip="Eliminar grupo" tooltipPosition="top"
+                      (click)="askDeleteGroup(group)"></button>
+            }
           </td>
         </tr>
       </ng-template>
@@ -122,8 +127,10 @@
     <span class="text-sm text-color-secondary">
       {{ members.length }} miembro(s) en este grupo
     </span>
-    <button pButton icon="pi pi-user-plus"
-            label="Agregar miembro" size="small" (click)="openAddMember()"></button>
+    @if (canManageMembers) {
+      <button pButton icon="pi pi-user-plus"
+              label="Agregar miembro" size="small" (click)="openAddMember()"></button>
+    }
   </div>
 
   <p-table [value]="members" [loading]="loadingMembers" responsiveLayout="scroll">

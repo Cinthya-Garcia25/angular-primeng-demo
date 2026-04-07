@@ -26,6 +26,7 @@ import { GroupsService, GroupMember } from '../../services/groups.service';
 import { PermissionsService }         from '../../services/permissions.service';
 import { DynamicPermissionsService }  from '../../services/dynamic-permissions.service';
 import { AuthGroup }                  from '../../models/auth.model';
+import { HasGroupPermissionDirective } from '../../directives/has-group-permission.directive';
 
 // ── Helpers de estado ────────────────────────────────────────────────────────
 const STATUS_ACCENT: Record<string, string> = {
@@ -68,7 +69,7 @@ const GROUP_ICONS = [
     DialogModule, InputTextModule, MessageModule, SelectModule,
     SkeletonModule, TableModule, TabsModule, TagModule,
     TextareaModule, TimelineModule, ToggleSwitchModule,
-    TooltipModule, DividerModule
+    TooltipModule, DividerModule, HasGroupPermissionDirective
   ],
   templateUrl: './group-dashboard.page.html',
   styleUrl:    './group-dashboard.page.css'
@@ -90,6 +91,39 @@ export class GroupDashboardPageComponent implements OnInit {
 
   get showGroupPicker(): boolean {
     return this.selectedGroup === null;
+  }
+
+  // ── Helpers de permisos por grupo ─────────────────────────────────────────────
+  
+  /** Verificar si el usuario tiene un permiso específico en el grupo actual */
+  hasGroupPermission(permission: string): boolean {
+    if (!this.selectedGroup) return false;
+    return this.groupsSvc.hasGroupPermission(this.selectedGroup.id, permission);
+  }
+
+  /** Verificar si puede ver tickets del grupo */
+  get canViewTickets(): boolean {
+    return this.hasGroupPermission('ticket:view');
+  }
+
+  /** Verificar si puede crear tickets en el grupo */
+  get canCreateTickets(): boolean {
+    return this.hasGroupPermission('ticket:add');
+  }
+
+  /** Verificar si puede editar tickets en el grupo */
+  get canEditTickets(): boolean {
+    return this.hasGroupPermission('ticket:edit');
+  }
+
+  /** Verificar si puede cambiar estado de tickets en el grupo */
+  get canChangeTicketStatus(): boolean {
+    return this.hasGroupPermission('ticket:edit:state');
+  }
+
+  /** Verificar si puede eliminar tickets en el grupo */
+  get canDeleteTickets(): boolean {
+    return this.hasGroupPermission('ticket:edit:delete');
   }
 
   // ── Estado ───────────────────────────────────────────────────────────────
@@ -348,7 +382,7 @@ export class GroupDashboardPageComponent implements OnInit {
   // ── Permiso para mover un ticket específico (drag & drop) ─────────────
   canMoveTicket(ticket: Ticket): boolean {
     const isAssignee = ticket.asignado?.username === this.currentUser;
-    const hasPermission = this.permsSvc.hasAnyPermission(['ticket:edit:state', 'ticket:edit_state']);
+    const hasPermission = this.canChangeTicketStatus; // Usar permiso por grupo
     return isAssignee || hasPermission;
   }
 
@@ -409,6 +443,9 @@ export class GroupDashboardPageComponent implements OnInit {
       this.loadGroupMembers(saved.id);
       this.loadTickets(); // Cargar inmediatamente
       
+      // Cargar permisos por grupo
+      this.groupsSvc.loadGroupPermissions(saved.id);
+      
       // Refrescar permisos en segundo plano
       this.dynamicPermsSvc.refreshPermissions().subscribe({
         error: () => {} // Manejar error silenciosamente
@@ -426,6 +463,9 @@ export class GroupDashboardPageComponent implements OnInit {
     this.selectedGroup = group;
     this.loadGroupMembers(group.id);
     this.loadTickets();
+    
+    // Cargar permisos por grupo
+    this.groupsSvc.loadGroupPermissions(group.id);
     
     // Refrescar permisos en segundo plano
     this.dynamicPermsSvc.refreshPermissions().subscribe({
@@ -447,9 +487,12 @@ export class GroupDashboardPageComponent implements OnInit {
     this.loadGroupMembers(group.id);
     this.loadTickets(); // Cargar inmediatamente
 
+    // Cargar permisos por grupo
+    this.groupsSvc.loadGroupPermissions(group.id);
+
     // Refrescar permisos en segundo plano
     this.dynamicPermsSvc.refreshPermissions().subscribe({
-      error: () => this.permsSvc.clearGroupPermissions()
+      error: (g: any) => this.permsSvc.clearGroupPermissions()
     });
   }
 
@@ -465,6 +508,15 @@ export class GroupDashboardPageComponent implements OnInit {
 
   loadTickets(): void {
     if (!this.selectedGroup) return;
+    
+    // Verificar permiso de ver tickets en el grupo
+    if (!this.canViewTickets) {
+      this.errorMsg.set('No tienes permisos para ver tickets en este grupo');
+      this.tickets.set([]);
+      this.loading.set(false);
+      return;
+    }
+    
     this.loading.set(true);
     this.errorMsg.set(null);
 
