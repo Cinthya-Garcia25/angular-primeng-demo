@@ -35,7 +35,7 @@ const ALL_PERMISSIONS: { label: string; value: string; group: string }[] = [
   { label: 'Cambiar estado',         value: 'ticket:edit:state',   group: 'Tickets' },
   { label: 'Eliminar tickets',       value: 'ticket:edit:delete',   group: 'Tickets' },
   { label: 'Ver perfil propio',      value: 'user:view',           group: 'Usuarios' },
-  { label: 'Ver todos los usuarios', value: 'user:view:all',       group: 'Usuarios' },
+  { label: 'Ver todos los usuarios', value: 'users:view',         group: 'Usuarios' },
   { label: 'Crear usuarios',         value: 'user:add',            group: 'Usuarios' },
   { label: 'Editar usuarios',        value: 'user:edit',           group: 'Usuarios' },
   { label: 'Eliminar usuarios',      value: 'user:remove',         group: 'Usuarios' },
@@ -145,7 +145,7 @@ export class AdminGroupComponent implements OnInit {
   // ── CRUD grupos ──────────────────────────────────────────────────────────
   loadGroups(): void {
     this.loading = true;
-    this.groupsSvc.getAll().subscribe({
+    this.groupsSvc.getAllGroups().subscribe({
         next: (data: any) => {
             this.groups = data;
             this.loading = false;

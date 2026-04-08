@@ -139,7 +139,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void { this.sub.unsubscribe(); }
 
   get canViewProfile(): boolean {
-    return this.permissionsService.hasPermission(Permission.USER_VIEW);
+    // El perfil siempre debe ser visible para usuarios autenticados
+    return true;
   }
 
   get canEditProfile(): boolean {

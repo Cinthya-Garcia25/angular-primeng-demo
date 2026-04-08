@@ -36,7 +36,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     const canAdmin  = this.perms.canViewAdmin();
     const canGroups = this.perms.canViewGroups();
     const canUsers  = this.perms.canViewUserManagement();
-    const canProfile = this.perms.hasPermission(Permission.USER_VIEW);
+    const canProfile = this.perms.hasPermission('user:view');
 
     this.updateMenuItems(canAdmin, canGroups, canUsers, canProfile);
 
@@ -48,7 +48,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.perms.canViewAdmin(),
         this.perms.canViewGroups(),
         this.perms.canViewUserManagement(),
-        this.perms.hasPermission(Permission.USER_VIEW)
+        this.perms.hasPermission('user:view')
       );
     });
   }

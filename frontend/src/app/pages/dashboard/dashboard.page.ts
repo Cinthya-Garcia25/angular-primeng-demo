@@ -17,7 +17,7 @@ import { DividerModule } from 'primeng/divider';
 
 // Servicios y modelos
 import { TicketsService, Ticket } from '../../services/tickets.service';
-import { GroupsService } from '../../services/groups.service';
+import { PermissionsService } from '../../services/permissions.service';
 import { DynamicPermissionsService } from '../../services/dynamic-permissions.service';
 import { AuthGroup } from '../../models/auth.model';
 
@@ -77,9 +77,9 @@ const GROUP_COLORS = [
 })
 export class DashboardComponent implements OnInit {
   private readonly ticketsSvc   = inject(TicketsService);
-  private readonly groupsSvc    = inject(GroupsService);
   private readonly router       = inject(Router);
-  private readonly dynamicPerms = inject(DynamicPermissionsService);
+  private readonly dynamicPermsSvc = inject(DynamicPermissionsService);
+  private readonly permsSvc        = inject(PermissionsService);
 
   // ── Constantes expuestas para el template ──────────────────────────────────
   readonly STATUS_ACCENT = STATUS_ACCENT;
@@ -240,14 +240,24 @@ export class DashboardComponent implements OnInit {
     }
   };
 
-  // ── Ciclo de vida ────────────────────────────────────────────────────────
+  // ── Ciclo de vida ────────────────────────────────────────────────
   ngOnInit(): void {
     // Cargar tickets inmediatamente, no esperar a permisos
     this.loadAllTickets();
     
     // Refrescar permisos en segundo plano si es necesario
-    this.dynamicPerms.isReady().subscribe(() => {
-      // Opcional: recargar si los permisos afectan lo que se muestra
+    this.dynamicPermsSvc.refreshPermissions().subscribe({
+      next: () => {
+        // Opcional: recargar si los permisos afectan lo que se muestra
+      },
+      error: () => {
+        console.error('Error recargando permisos en dashboard');
+      }
+    });
+    
+    // Escuchar cambios de permisos para actualizar las gráficas
+    this.dynamicPermsSvc.onPermissionsChanged().subscribe(() => {
+      // Las gráficas se actualizarán automáticamente al cambiar los permisos
     });
   }
 
@@ -265,9 +275,21 @@ export class DashboardComponent implements OnInit {
     const groupIds = this.groups.map(g => g.id);
     this.ticketsSvc.getAll().subscribe({
       next: (tickets) => {
-        // Filtrar solo tickets de los grupos del usuario
-        const userTickets = tickets.filter(t => groupIds.includes(t.grupos?.id));
-        this.tickets.set(userTickets);
+        // Si tiene permisos de tickets, mostrar todos los tickets
+        const allPermissions = this.permsSvc.getEffectivePermissions();
+        const hasTicketPermission = allPermissions.some((p: string) =>
+          p.includes('ticket:view') || p.includes('tickets:view')
+        );
+        
+        if (hasTicketPermission) {
+          // Usuario con permisos: ve todos los tickets
+          this.tickets.set(tickets);
+        } else {
+          // Usuario sin permisos: solo tickets de sus grupos
+          const userTickets = tickets.filter(t => groupIds.includes(t.grupos?.id));
+          this.tickets.set(userTickets);
+        }
+        
         this.loading.set(false);
       },
       error: () => {
@@ -281,8 +303,7 @@ export class DashboardComponent implements OnInit {
   onGroupChange(group: AuthGroup): void {
     sessionStorage.setItem('selectedGroupId', group.id);
     sessionStorage.setItem('selectedGroupName', group.name);
-    // Redirigir al tablero Kanban
-    this.router.navigate(['/kanban']);
+    this.router.navigate(['/groups', group.id, 'kanban']);
   }
 
 

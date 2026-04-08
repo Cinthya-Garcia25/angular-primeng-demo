@@ -69,7 +69,7 @@ const GROUP_ICONS = [
     DialogModule, InputTextModule, MessageModule, SelectModule,
     SkeletonModule, TableModule, TabsModule, TagModule,
     TextareaModule, TimelineModule, ToggleSwitchModule,
-    TooltipModule, DividerModule, HasGroupPermissionDirective
+    TooltipModule, DividerModule
   ],
   templateUrl: './group-dashboard.page.html',
   styleUrl:    './group-dashboard.page.css'
@@ -103,6 +103,11 @@ export class GroupDashboardPageComponent implements OnInit {
 
   /** Verificar si puede ver tickets del grupo */
   get canViewTickets(): boolean {
+    // Los administradores con permissions:manage pueden ver todos los tickets
+    if (this.permsSvc.hasPermission('permissions:manage')) {
+      return true;
+    }
+    // Usuarios normales necesitan permiso de grupo
     return this.hasGroupPermission('ticket:view');
   }
 
@@ -118,7 +123,12 @@ export class GroupDashboardPageComponent implements OnInit {
 
   /** Verificar si puede cambiar estado de tickets en el grupo */
   get canChangeTicketStatus(): boolean {
-    return this.hasGroupPermission('ticket:edit:state');
+    // Los administradores con permissions:manage pueden cambiar estados
+    if (this.permsSvc.hasPermission('permissions:manage')) {
+      return true;
+    }
+    // Usuarios normales necesitan permiso de grupo
+    return this.hasGroupPermission('ticket:edit_state');
   }
 
   /** Verificar si puede eliminar tickets en el grupo */
@@ -439,60 +449,45 @@ export class GroupDashboardPageComponent implements OnInit {
     const saved   = savedId ? this.groups.find(g => g.id === savedId) : null;
 
     if (saved) {
-      this.selectedGroup = saved;
-      this.loadGroupMembers(saved.id);
-      this.loadTickets(); // Cargar inmediatamente
-      
-      // Cargar permisos por grupo
-      this.groupsSvc.loadGroupPermissions(saved.id);
-      
-      // Refrescar permisos en segundo plano
-      this.dynamicPermsSvc.refreshPermissions().subscribe({
-        error: () => {} // Manejar error silenciosamente
-      });
+      this.activateGroup(saved);
     }
   }
 
   // ── Selección de grupo desde el picker ───────────────────────────────────
   selectGroupFromPicker(group: AuthGroup): void {
-    this.loadingGroupPerms = true;
     sessionStorage.setItem('selectedGroupId',   group.id);
     sessionStorage.setItem('selectedGroupName', group.name);
-
-    // Cargar datos inmediatamente
-    this.selectedGroup = group;
-    this.loadGroupMembers(group.id);
-    this.loadTickets();
-    
-    // Cargar permisos por grupo
-    this.groupsSvc.loadGroupPermissions(group.id);
-    
-    // Refrescar permisos en segundo plano
-    this.dynamicPermsSvc.refreshPermissions().subscribe({
-      next: () => {
-        this.loadingGroupPerms = false;
-      },
-      error: () => {
-        this.permsSvc.clearGroupPermissions();
-        this.loadingGroupPerms = false;
-      }
-    });
+    this.activateGroup(group);
   }
 
   // ── Cambio de grupo desde el select del header ───────────────────────────
   onGroupChange(group: AuthGroup): void {
     sessionStorage.setItem('selectedGroupId',   group.id);
     sessionStorage.setItem('selectedGroupName', group.name);
+    this.activateGroup(group);
+  }
+
+  // ── Activar grupo: cargar permisos primero, luego tickets ────────────────
+  private activateGroup(group: AuthGroup): void {
+    this.loadingGroupPerms = true;
     this.selectedGroup = group;
+    this.tickets.set([]);
+    this.errorMsg.set(null);
     this.loadGroupMembers(group.id);
-    this.loadTickets(); // Cargar inmediatamente
 
-    // Cargar permisos por grupo
-    this.groupsSvc.loadGroupPermissions(group.id);
-
-    // Refrescar permisos en segundo plano
-    this.dynamicPermsSvc.refreshPermissions().subscribe({
-      error: (g: any) => this.permsSvc.clearGroupPermissions()
+    // Primero cargar permisos del grupo, después los tickets
+    this.groupsSvc.getMyGroupPermissions(group.id).subscribe({
+      next: (permissions) => {
+        this.groupsSvc.updateGroupPermissionsCache(group.id, permissions);
+        this.permsSvc.setGroupPermissions(permissions);
+        this.loadingGroupPerms = false;
+        this.loadTickets();
+      },
+      error: () => {
+        this.permsSvc.clearGroupPermissions();
+        this.loadingGroupPerms = false;
+        this.loadTickets();
+      }
     });
   }
 

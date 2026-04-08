@@ -218,7 +218,11 @@
       <div class="flex align-items-center gap-2 p-3 pb-0 mb-3">
         <i class="pi pi-table text-indigo-500"></i>
         <h3 class="m-0 text-base font-bold text-900">Tablero Kanban</h3>
-        <span class="ml-auto text-sm text-500">Arrastra los tickets para cambiar su estado</span>
+        @if (canChangeTicketStatus) {
+          <span class="ml-auto text-sm text-500">Arrastra los tickets para cambiar su estado</span>
+        } @else {
+          <span class="ml-auto text-sm text-500">No tienes permisos para cambiar estados</span>
+        }
       </div>
 
       @if (loading()) {
@@ -236,9 +240,9 @@
                  style="min-width:240px; min-height:14rem"
                  [style.border-top]="'3px solid ' + statusAccent(c.codigo)"
                  [class.bg-indigo-50]="dropTargetStatus === c.codigo"
-                 (dragover)="onDragOver($event, c.codigo)"
-                 (dragleave)="onDragLeave($event, c.codigo)"
-                 (drop)="onDrop($event, c.codigo)"
+                 (dragover)="canChangeTicketStatus ? onDragOver($event, c.codigo) : null"
+                 (dragleave)="canChangeTicketStatus ? onDragLeave($event, c.codigo) : null"
+                 (drop)="canChangeTicketStatus ? onDrop($event, c.codigo) : null"
                  ondragover="event.preventDefault()">
 
               <div class="flex align-items-center justify-content-between gap-2 pt-3 px-3 mb-2">
@@ -258,9 +262,9 @@
                   <div class="kanban-card surface-0 border-1 surface-border border-round-lg flex
                               hover:shadow-2 hover:border-indigo-200 transition-all transition-duration-150"
                        [class.opacity-50]="draggedTicketId === t.id"
-                       draggable="true"
-                       (dragstart)="onDragStart($event, t)"
-                       (dragend)="onDragEnd()"
+                       [draggable]="canChangeTicketStatus"
+                       (dragstart)="canChangeTicketStatus ? onDragStart($event, t) : null"
+                       (dragend)="canChangeTicketStatus ? onDragEnd() : null"
                        (click)="onTicketClick(t)">
 
                     <!-- Franja de prioridad -->

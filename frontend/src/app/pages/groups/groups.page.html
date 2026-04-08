@@ -19,35 +19,21 @@
       responsiveLayout="scroll">
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="level">Nivel <p-sortIcon field="level" /></th>
-          <th pSortableColumn="author">Autor <p-sortIcon field="author" /></th>
-          <th pSortableColumn="name">Nombre <p-sortIcon field="name" /></th>
-          <th pSortableColumn="members">Integrantes <p-sortIcon field="members" /></th>
-          <th pSortableColumn="tickets">Tickets <p-sortIcon field="tickets" /></th>
+          <th pSortableColumn="nombre">Nombre <p-sortIcon field="nombre" /></th>
           <th>Descripcion</th>
+          <th>Fecha de Unión</th>
           <th>Acciones</th>
         </tr>
       </ng-template>
 
       <ng-template pTemplate="body" let-group>
         <tr>
-          <td><p-tag [value]="group.level" [severity]="levelSeverity(group.level)" /></td>
-          <td>{{ group.author }}</td>
-          <td>{{ group.name }}</td>
-          <td>
-            <span class="metric-cell"><i class="pi pi-users"></i>{{ group.members }}</span>
-          </td>
-          <td>
-            <span class="metric-cell" style="cursor: pointer; color: var(--primary-color); transition: color 0.2s;"
-                  (click)="enterGroup(group)"
-                  pTooltip="Ver tickets del grupo" tooltipPosition="top">
-              <i class="pi pi-ticket"></i>{{ group.tickets }}
-            </span>
-          </td>
-          <td>{{ group.description }}</td>
+          <td>{{ group.nombre }}</td>
+          <td>{{ group.descripcion || 'Sin descripción' }}</td>
+          <td>{{ group.fecha_unido ? (group.fecha_unido | date:'shortDate') : 'N/A' }}</td>
           <td class="actions-col">
             <button pButton type="button" icon="pi pi-sign-in" severity="success" text
-              [pTooltip]="'Entrar a ' + group.name" tooltipPosition="top"
+              [pTooltip]="'Entrar a ' + group.nombre" tooltipPosition="top"
               (click)="enterGroup(group)" aria-label="Entrar al grupo"></button>
             <button *ifHasPermission="'group:edit'" pButton type="button" icon="pi pi-pencil" severity="secondary"
               text (click)="openEditDialog(group)" aria-label="Editar grupo"></button>
@@ -59,7 +45,7 @@
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="7">No hay grupos registrados.</td>
+          <td colspan="4">No hay grupos registrados.</td>
         </tr>
       </ng-template>
     </p-table>
@@ -74,56 +60,17 @@
         <label for="name">Nombre <span class="required">*</span></label>
         <input pInputText id="name" type="text" placeholder="Nombre del grupo" formControlName="name" />
         @if (controlHasError('name')) {
-          <small class="p-error">Nombre requerido (minimo 3 caracteres).</small>
+          <small class="p-error">Nombre requerido (mínimo 3 caracteres).</small>
         }
       </div>
       <div class="field-col">
-        <label for="author">Autor <span class="required">*</span></label>
-        <input pInputText id="author" type="text" placeholder="Autor del grupo" formControlName="author" />
-        @if (controlHasError('author')) {
-          <small class="p-error">Autor requerido (minimo 3 caracteres).</small>
+        <label for="description">Descripción <span class="required">*</span></label>
+        <textarea pInputTextarea id="description" rows="3" placeholder="Descripción del grupo"
+          formControlName="description"></textarea>
+        @if (controlHasError('description')) {
+          <small class="p-error">Descripción requerida (mínimo 10 caracteres).</small>
         }
       </div>
-    </div>
-
-    <div class="form-row two-cols">
-      <div class="field-col">
-        <label for="level">Nivel <span class="required">*</span></label>
-        <p-select id="level" [options]="levelOptions" formControlName="level"
-          placeholder="Seleccionar nivel" optionLabel="label" optionValue="value" />
-        @if (controlHasError('level')) {
-          <small class="p-error">El nivel es requerido.</small>
-        }
-      </div>
-      <div class="field-col">
-        <label for="members">Integrantes <span class="required">*</span></label>
-        <p-inputnumber id="members" formControlName="members" [min]="0"
-          placeholder="Cantidad de integrantes" [showButtons]="false" />
-        @if (controlHasError('members')) {
-          <small class="p-error">Integrantes debe ser 0 o mayor.</small>
-        }
-      </div>
-    </div>
-
-    <div class="form-row two-cols">
-      <div class="field-col">
-        <label for="tickets">Tickets <span class="required">*</span></label>
-        <p-inputnumber id="tickets" formControlName="tickets" [min]="0"
-          placeholder="Cantidad de tickets" [showButtons]="false" />
-        @if (controlHasError('tickets')) {
-          <small class="p-error">Tickets debe ser 0 o mayor.</small>
-        }
-      </div>
-      <div class="field-col"></div>
-    </div>
-
-    <div class="field-col">
-      <label for="description">Descripcion <span class="required">*</span></label>
-      <textarea pInputTextarea id="description" rows="3" placeholder="Descripcion del grupo"
-        formControlName="description"></textarea>
-      @if (controlHasError('description')) {
-        <small class="p-error">Descripcion requerida (minimo 10 caracteres).</small>
-      }
     </div>
 
     <div class="dialog-actions">
@@ -134,11 +81,11 @@
   </form>
 </p-dialog>
 
-<p-dialog header="Confirmar Eliminacion" [(visible)]="deleteDialogVisible" [modal]="true" [draggable]="false"
+<p-dialog header="Confirmar Eliminación" [(visible)]="deleteDialogVisible" [modal]="true" [draggable]="false"
   [resizable]="false" [style]="{ width: '28rem', maxWidth: '95vw' }" appendTo="body" (onHide)="closeDeleteDialog()">
   <div class="delete-confirm-content">
     <i class="pi pi-exclamation-triangle"></i>
-    <p>Estas seguro de que deseas eliminar el grupo "{{ groupToDelete?.name }}"?</p>
+    <p>¿Estás seguro de que deseas eliminar el grupo "{{ groupToDelete?.nombre }}"?</p>
   </div>
 
   <div class="dialog-actions">

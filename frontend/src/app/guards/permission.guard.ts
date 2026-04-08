@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivateFn } from '@angular/router';
+import { ActivatedRouteSnapshot, CanActivateFn, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { PermissionsService } from '../services/permissions.service';
 import { DynamicPermissionsService } from '../services/dynamic-permissions.service';
@@ -7,10 +7,18 @@ import { DynamicPermissionsService } from '../services/dynamic-permissions.servi
 export const permissionGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const permissionsSvc  = inject(PermissionsService);
   const dynamicPermsSvc = inject(DynamicPermissionsService);
+  const router          = inject(Router);
 
-  const permisos: string[] = route.data['permissions'] ?? [];
+  const required: string[] = route.data['permissions'] ?? [];
 
-  // Permitir navegación inmediata, verificar permisos en segundo plano
-  // Si no tiene permisos, el componente manejará la restricción
-  return true;
+  // Si la ruta no declara permisos requeridos, se permite el acceso
+  if (required.length === 0) return true;
+
+  // Esperar a que los permisos estén cargados desde la DB antes de evaluar
+  return dynamicPermsSvc.isReady().pipe(
+    map(() => {
+      const hasAccess = permissionsSvc.hasAnyPermission(required);
+      return hasAccess ? true : router.createUrlTree(['/unauthorized']);
+    })
+  );
 };

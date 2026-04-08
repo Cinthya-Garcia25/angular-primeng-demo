@@ -24,7 +24,7 @@ export enum Permission {
     TICKET_EDIT_ASSIGN = 'ticket:edit:assign',
 
     USER_VIEW = 'user:view',
-    USER_VIEW_ALL = 'user:view:all',
+    USERS_VIEW = 'users:view',
     USER_EDIT = 'user:edit',
     USER_ADD = 'user:add',
     USER_REMOVE = 'user:remove',

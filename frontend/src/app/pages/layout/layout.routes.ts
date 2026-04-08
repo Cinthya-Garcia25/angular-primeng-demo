@@ -24,7 +24,7 @@ export const layoutRoutes: Routes = [
     path: 'admin-user',
     loadComponent: () => import('../user-management/user-management.page').then(m => m.UserManagementPageComponent),
     canActivate: [permissionGuard],
-    data: { permissions: [Permission.USER_VIEW_ALL, Permission.USER_EDIT, Permission.USER_ADD, Permission.USER_REMOVE] }
+    data: { permissions: [Permission.USERS_VIEW, Permission.USER_EDIT, Permission.USER_ADD, Permission.USER_REMOVE] }
   },
   {
     path: 'profile',

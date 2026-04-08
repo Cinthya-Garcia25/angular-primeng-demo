@@ -57,12 +57,10 @@ export class DynamicPermissionsService {
     }
 
     private applyPermissions(res: PermissionsApiResponse): void {
-        const perms      = res?.data?.permissions      ?? [];
-        const groupPerms = res?.data?.groupPermissions ?? [];
+        const perms      = res?.data?.permissions      ?? []; // Permisos administrativos globales
+        const groupPerms = res?.data?.groupPermissions ?? []; // Permisos funcionales del grupo
 
-        // HttpClient ya corre dentro de la zona de Angular — no hace falta ngZone.run()
-        // aquí. Añadirlo duplica el ciclo de CD y provoca NG0100 cuando coincide
-        // con otras actualizaciones asíncronas del componente.
+        // Modelo híbrido: permisos globales + permisos de grupo
         this.permissionsSvc.setPermissions(perms);
         this.permissionsSvc.setGroupPermissions(groupPerms);
 

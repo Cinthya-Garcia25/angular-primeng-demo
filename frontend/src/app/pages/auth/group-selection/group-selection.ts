@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { PermissionsService } from '../../../services/permissions.service';
 import { DynamicPermissionsService } from '../../../services/dynamic-permissions.service';
 import { AuthService } from '../../../services/auth.service';
+import { GroupsService } from '../../../services/groups.service';
 
 export interface UserGroup {
   id: string;
@@ -25,6 +26,7 @@ export class GroupSelection implements OnInit {
   private readonly permissionsService = inject(PermissionsService);
   private readonly dynamicPermsSvc   = inject(DynamicPermissionsService);
   private readonly authService = inject(AuthService);
+  private readonly groupsService = inject(GroupsService);
 
   groups: UserGroup[] = [];
   username = '';
@@ -56,7 +58,11 @@ export class GroupSelection implements OnInit {
     // Recargar permisos globales + de grupo desde DB en una sola llamada.
     // El interceptor ya añade x-group-id automáticamente desde sessionStorage.
     this.dynamicPermsSvc.refreshPermissions().subscribe({
-      next:  () => this.navigateToDashboard(),
+      next:  () => {
+        // Cargar automáticamente los permisos específicos del grupo
+        this.groupsService.loadGroupPermissions(group.id);
+        this.navigateToDashboard();
+      },
       error: () => {
         this.permissionsService.clearGroupPermissions();
         this.navigateToDashboard();

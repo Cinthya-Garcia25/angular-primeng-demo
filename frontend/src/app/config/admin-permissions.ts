@@ -19,7 +19,7 @@ export const ADMIN_PERMISSIONS: Permission[] = [
 
   // Permisos de usuarios (según tu lista)
   Permission.USER_VIEW,
-  Permission.USER_VIEW_ALL,
+  Permission.USERS_VIEW,
   Permission.USER_EDIT,
   Permission.USER_ADD,
   Permission.USER_REMOVE,

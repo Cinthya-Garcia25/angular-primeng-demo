@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { permissionGuard } from './guards/permission.guard';
+import { Permission } from './models/permissions.model';
 
 export const routes: Routes = [
   // ── Redirección raíz ─────────────────────────────────────────────────────
@@ -42,15 +43,6 @@ export const routes: Routes = [
           )
       },
 
-      // Tablero Kanban del grupo seleccionado
-      {
-        path: 'kanban',
-        loadComponent: () =>
-          import('./pages/group-dashboard/group-dashboard.page').then(
-            (m) => m.GroupDashboardPageComponent
-          )
-      },
-
       // Lista de tickets del grupo seleccionado
       {
         path: 'groups/:id/list',
@@ -60,11 +52,18 @@ export const routes: Routes = [
           import('./pages/tickets/tickets.page').then((m) => m.TicketsPageComponent)
       },
 
+      // Kanban del grupo seleccionado (tablero con tickets por estado)
+      {
+        path: 'groups/:id/kanban',
+        loadComponent: () =>
+          import('./pages/group-dashboard/group-dashboard.page').then((m) => m.GroupDashboardPageComponent)
+      },
+
       // Admin: Grupos
       {
         path: 'admin/groups',
         canActivate: [permissionGuard],
-        data: { permissions: ['group:edit', 'group:add', 'group:remove'] },
+        data: { permissions: ['groups:manage', Permission.GROUP_EDIT, Permission.GROUP_ADD, Permission.GROUP_DELETE] },
         loadComponent: () =>
           import('./pages/admin-group/admin-group.component').then((m) => m.AdminGroupComponent)
       },
@@ -73,7 +72,7 @@ export const routes: Routes = [
       {
         path: 'admin/users',
         canActivate: [permissionGuard],
-        data: { permissions: ['user:view:all', 'user:add', 'user:remove'] },
+        data: { permissions: [Permission.USERS_MANAGE, Permission.USERS_VIEW, Permission.USER_ADD, Permission.USER_REMOVE] },
         loadComponent: () =>
           import('./pages/user-management/user-management.page').then(
             (m) => m.UserManagementPageComponent

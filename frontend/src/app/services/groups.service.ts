@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { map, BehaviorSubject } from 'rxjs';
+import { map, BehaviorSubject, Subscription } from 'rxjs';
 import { ApiResponse } from '../models/auth.model';
+import { PermissionsService } from './permissions.service';
 
 export interface Group {
   id: string;
@@ -40,15 +41,44 @@ export interface UpdateGroupPayload {
 })
 export class GroupsService {
   private readonly http = inject(HttpClient);
+  private readonly permissionsService = inject(PermissionsService);
   private readonly baseUrl = '/api/groups';
 
   // Caché de permisos por grupo
   private groupPermissionsCache = new BehaviorSubject<Map<string, string[]>>(new Map());
   public groupPermissions$ = this.groupPermissionsCache.asObservable();
+  
+  // Suscripción para mantener sincronizados los permisos
+  private permissionsSubscription: Subscription | null = null;
 
   getAll() {
-    return this.http.get<ApiResponse<Group>>(`${this.baseUrl}`).pipe(
-      map((res: ApiResponse<Group>) => res.data ?? [])
+    return this.http.get<ApiResponse<Group[]>>(`${this.baseUrl}/my-groups`).pipe(
+      map((res: ApiResponse<Group[]>): Group[] => {
+        // Handle case where data might be nested in an additional array
+        const data = res.data;
+        if (!Array.isArray(data)) {
+          return [];
+        }
+
+        // Check if it's a nested array [Group[], ...]
+        if (data.length > 0 && Array.isArray(data[0])) {
+          // Safely flatten nested array
+          const nested = data as unknown[][];
+          return nested.flat().filter(item =>
+            item && typeof item === 'object' && 'id' in item && 'nombre' in item
+          ) as Group[];
+        }
+
+        // It's already Group[]
+        return data as unknown as Group[];
+      })
+    );
+  }
+
+  /** Obtener todos los grupos (requiere permisos de admin) */
+  getAllGroups() {
+    return this.http.get<ApiResponse<Group>>(this.baseUrl).pipe(
+      map((res: ApiResponse<Group>): Group[] => res.data ?? [])
     );
   }
 
@@ -131,7 +161,18 @@ export class GroupsService {
       const currentCache = this.groupPermissionsCache.value;
       currentCache.set(groupId, permissions);
       this.groupPermissionsCache.next(new Map(currentCache));
+      
+      // También actualizar el PermissionsService para mantener sincronización
+      this.permissionsService.setGroupPermissions(permissions);
     });
+  }
+
+  /** Cargar permisos del grupo activo (basado en sessionStorage) */
+  loadCurrentGroupPermissions(): void {
+    const currentGroupId = sessionStorage.getItem('selectedGroupId');
+    if (currentGroupId) {
+      this.loadGroupPermissions(currentGroupId);
+    }
   }
 
   /** Verificar si el usuario tiene un permiso específico en un grupo */
@@ -152,6 +193,12 @@ export class GroupsService {
     const currentCache = this.groupPermissionsCache.value;
     currentCache.set(groupId, permissions);
     this.groupPermissionsCache.next(new Map(currentCache));
+    
+    // Si es el grupo activo, también actualizar PermissionsService
+    const currentGroupId = sessionStorage.getItem('selectedGroupId');
+    if (currentGroupId === groupId) {
+      this.permissionsService.setGroupPermissions(permissions);
+    }
   }
 
   /** Limpiar caché de permisos de un grupo */
@@ -159,10 +206,17 @@ export class GroupsService {
     const currentCache = this.groupPermissionsCache.value;
     currentCache.delete(groupId);
     this.groupPermissionsCache.next(new Map(currentCache));
+    
+    // Si es el grupo activo, también limpiar PermissionsService
+    const currentGroupId = sessionStorage.getItem('selectedGroupId');
+    if (currentGroupId === groupId) {
+      this.permissionsService.clearGroupPermissions();
+    }
   }
 
   /** Limpiar toda la caché de permisos por grupo */
   clearAllGroupPermissions(): void {
     this.groupPermissionsCache.next(new Map());
+    this.permissionsService.clearGroupPermissions();
   }
 }

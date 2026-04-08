@@ -23,6 +23,7 @@ export class PermissionsService {
      * el valor correcto está disponible antes del primer render,
      * evitando ExpressionChangedAfterItHasBeenCheckedError (NG0100).
      */
+    private permissions = signal<string[]>([]);
     private userPermissions  = signal<string[]>(readCache(CACHE_USER));
     private groupPermissions = signal<string[]>(readCache(CACHE_GROUP));
 
@@ -32,9 +33,10 @@ export class PermissionsService {
 
     constructor() {}
 
-    // ── Permisos globales ──────────────────────────────────────────────────
+    // ── Permisos administrativos globales ─────────────────────────────────────────────────
 
     setPermissions(perms: string[]) {
+        this.permissions.set(perms);
         this.userPermissions.set(perms);
         this._changed$.next();
     }
@@ -45,7 +47,7 @@ export class PermissionsService {
     }
 
     getPermissions(): string[] {
-        return this.userPermissions();
+        return this.permissions();
     }
 
     // ── Permisos por grupo ─────────────────────────────────────────────────
@@ -64,11 +66,12 @@ export class PermissionsService {
         return this.groupPermissions();
     }
 
-    // ── Verificación (global OR grupo) ────────────────────────────────────
+    // ── Verificación (híbrido: globales + de grupo) ────────────────────────────────────
 
-    hasPermission(permiso: string): boolean {
-        return this.userPermissions().includes(permiso) ||
-               this.groupPermissions().includes(permiso);
+    hasPermission(permission: string): boolean {
+        const globalPerms = this.permissions();
+        const groupPerms = this.groupPermissions();
+        return globalPerms.includes(permission) || groupPerms.includes(permission);
     }
 
     hasAnyPermission(perms: string[]): boolean {
@@ -89,7 +92,7 @@ export class PermissionsService {
     readonly canViewDashboard = computed(() => true);
 
     readonly canViewGroups = computed(() =>
-        this.hasAnyPermission(['group:view', 'group:edit', 'group:add', 'group:remove'])
+        this.hasAnyPermission(['group:view', 'groups:manage', 'group:edit', 'group:add', 'group:delete'])
     );
 
     readonly canViewGroupSettings = computed(() =>
@@ -97,14 +100,14 @@ export class PermissionsService {
     );
 
     readonly canViewUserManagement = computed(() =>
-        this.hasAnyPermission(['user:view:all', 'user:edit', 'user:add', 'user:remove', 'permissions:manage'])
+        this.hasAnyPermission(['user:view', 'users:view', 'users:manage', 'user:edit', 'user:add', 'user:delete', 'permissions:manage'])
     );
 
     readonly canViewTickets = computed(() =>
-        this.hasAnyPermission(['ticket:view', 'tickets:view', 'ticket:add', 'ticket:edit', 'ticket:edit:delete', 'ticket:edit:state'])
+        this.hasAnyPermission(['ticket:view', 'tickets:view', 'ticket:edit', 'ticket:add', 'ticket:delete', 'ticket:edit_state'])
     );
 
     readonly canViewAdmin = computed(() =>
-        this.canViewGroups() || this.canViewUserManagement() || this.canViewGroupSettings()
+        this.hasAnyPermission(['permissions:manage', 'user:add', 'user:delete', 'group:add', 'group:delete'])
     );
 }

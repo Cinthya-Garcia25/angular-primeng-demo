@@ -5,6 +5,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
 import { TableModule } from 'primeng/table';
@@ -15,6 +16,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { PermissionsService } from '../../services/permissions.service';
+import { Permission } from '../../models/permissions.model';
 import { HasPermissionDirective } from '../../directives/has-permission.directive';
 import { TooltipModule } from 'primeng/tooltip';
 import { GroupsService, Group } from '../../services/groups.service';
@@ -22,7 +24,6 @@ import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-groups-page',
-  standalone: true,
   imports: [
     CommonModule,
     FormsModule,
@@ -30,6 +31,7 @@ import { Subscription } from 'rxjs';
     CardModule,
     ButtonModule,
     InputTextModule,
+    InputNumberModule,
     SelectModule,
     TextareaModule,
     TableModule,
@@ -54,6 +56,12 @@ export class GroupsPageComponent implements OnInit, OnDestroy {
   private readonly groupsService = inject(GroupsService);
   private readonly sub = new Subscription();
 
+  readonly levelOptions = [
+    { label: 'Alto',  value: 'Alto'  },
+    { label: 'Medio', value: 'Medio' },
+    { label: 'Bajo',  value: 'Bajo'  }
+  ];
+
   groups: Group[] = [];
   searchValue = '';
   dialogVisible = false;
@@ -62,10 +70,10 @@ export class GroupsPageComponent implements OnInit, OnDestroy {
   groupToDelete: Group | null = null;
 
   readonly groupForm = this.fb.group({
-    level: ['Medio'],
-    author: [''],
-    name: ['', [Validators.required, Validators.minLength(3)]],
-    description: ['', [Validators.required, Validators.minLength(10)]]
+    level:       ['Medio', [Validators.required]],
+    author:      ['',      [Validators.required, Validators.minLength(3)]],
+    name:        ['',      [Validators.required, Validators.minLength(3)]],
+    description: ['',      [Validators.required, Validators.minLength(10)]]
   });
 
   private editingGroupId: string | null = null;
@@ -83,20 +91,13 @@ export class GroupsPageComponent implements OnInit, OnDestroy {
   }
 
   private loadGroups(): void {
-    // Cargar siempre desde backend - sin localStorage
-    // Los administradores ven todos los grupos, los usuarios normales solo los suyos
-    const groupsObservable = this.permissionsService.hasPermission('groups:manage') || 
-                            this.permissionsService.hasPermission('group:view')
-      ? this.groupsService.getAllGroups()
-      : this.groupsService.getAll();
-    
     this.sub.add(
-      groupsObservable.subscribe({
-        next: (groups: Group[]) => {
+      this.groupsService.getAll().subscribe({
+        next: (groups) => {
           this.groups = groups;
           console.log('Grupos cargados desde backend:', groups);
         },
-        error: (error: any) => {
+        error: (error) => {
           console.error('Error cargando grupos:', error);
           this.messageService.add({ 
             severity: 'error', 
@@ -173,7 +174,7 @@ export class GroupsPageComponent implements OnInit, OnDestroy {
       // Editar grupo existente
       this.groupsService.update(this.editingGroupId, payload).subscribe({
         next: () => {
-          this.loadGroups(); // Recargar desde backend
+          this.loadGroups(); // Recargar grupos desde backend
           this.closeDialog();
           this.messageService.add({ 
             severity: 'success', 
@@ -181,7 +182,7 @@ export class GroupsPageComponent implements OnInit, OnDestroy {
             detail: 'El grupo se ha actualizado correctamente' 
           });
         },
-        error: (error: any) => {
+        error: (error) => {
           this.messageService.add({ 
             severity: 'error', 
             summary: 'Error', 
@@ -193,7 +194,7 @@ export class GroupsPageComponent implements OnInit, OnDestroy {
       // Crear nuevo grupo
       this.groupsService.create(payload).subscribe({
         next: () => {
-          this.loadGroups(); // Recargar desde backend
+          this.loadGroups(); // Recargar grupos desde backend
           this.closeDialog();
           this.messageService.add({ 
             severity: 'success', 
@@ -201,7 +202,7 @@ export class GroupsPageComponent implements OnInit, OnDestroy {
             detail: 'El grupo se ha creado correctamente' 
           });
         },
-        error: (error: any) => {
+        error: (error) => {
           this.messageService.add({ 
             severity: 'error', 
             summary: 'Error', 
@@ -222,7 +223,7 @@ export class GroupsPageComponent implements OnInit, OnDestroy {
     
     this.groupsService.delete(this.groupToDelete.id).subscribe({
       next: () => {
-        this.loadGroups(); // Recargar desde backend
+        this.loadGroups(); // Recargar grupos desde backend
         this.closeDeleteDialog();
         this.messageService.add({ 
           severity: 'success', 
@@ -230,7 +231,7 @@ export class GroupsPageComponent implements OnInit, OnDestroy {
           detail: 'El grupo se ha eliminado correctamente' 
         });
       },
-      error: (error: any) => {
+      error: (error) => {
         this.messageService.add({ 
           severity: 'error', 
           summary: 'Error', 
@@ -252,15 +253,9 @@ export class GroupsPageComponent implements OnInit, OnDestroy {
   }
 
   levelSeverity(level: string): 'danger' | 'warn' | 'success' | 'info' {
-    if (level === 'Alto') {
-      return 'danger';
-    }
-    if (level === 'Medio') {
-      return 'warn';
-    }
-    if (level === 'Bajo') {
-      return 'success';
-    }
+    if (level === 'Alto') return 'danger';
+    if (level === 'Medio') return 'warn';
+    if (level === 'Bajo') return 'success';
     return 'info';
   }
 }

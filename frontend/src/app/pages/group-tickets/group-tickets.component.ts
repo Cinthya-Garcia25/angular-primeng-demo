@@ -71,7 +71,12 @@ export class GroupTicketsComponent implements OnInit, OnDestroy {
   ];
 
   get canViewTickets()   { return this.permissionsService.hasPermission(Permission.TICKET_VIEW); }
-  get canViewAllTickets(){ return this.permissionsService.hasPermission(Permission.TICKETS_VIEW) || this.permissionsService.hasPermission(Permission.USER_VIEW_ALL); }
+  get canViewAllTickets(){ return this.permissionsService.hasPermission(Permission.TICKETS_VIEW) || this.permissionsService.hasPermission(Permission.USERS_VIEW); }
+
+  canChangeState(ticket: Ticket): boolean {
+    if (!this.permissionsService.hasPermission(Permission.TICKET_EDIT_STATE)) return false;
+    return this.canViewAllTickets || ticket.assignee === this.currentUser;
+  }
 
   ngOnInit(): void {
     if (!this.canViewTickets) { this.tickets = []; return; }

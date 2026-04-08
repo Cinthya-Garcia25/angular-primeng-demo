@@ -59,9 +59,17 @@ export class AuthService {
                 };
                 localStorage.setItem('authUserData', JSON.stringify(userData));
 
-                // Cargar permisos del JWT como estado inicial y persistir en cache
-                // para que sobrevivan al primer page-refresh sin esperar el poll.
-                const initialPerms = payload.user.permissions as string[];
+                // Para superadministradores, guardar TODOS los permisos
+                // Para usuarios normales, solo permisos administrativos globales
+                const rawPerms = payload.user.permissions as string[];
+                const isAdmin = rawPerms.includes('permissions:manage');
+                const initialPerms = isAdmin ? rawPerms : rawPerms.filter(p => [
+                    'groups:manage', 'users:manage', 'permissions:manage',
+                    'group:add', 'group:remove', 'group:edit',
+                    'user:add', 'user:remove', 'user:edit',
+                    'user:deactivated', 'user:activated',
+                    'users:view'
+                ].includes(p));
                 this.permissionsSvc.setPermissions(initialPerms);
                 sessionStorage.setItem('perm_cache_user',  JSON.stringify(initialPerms));
                 sessionStorage.setItem('perm_cache_group', JSON.stringify([]));
