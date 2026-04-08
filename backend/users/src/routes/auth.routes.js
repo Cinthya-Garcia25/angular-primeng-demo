@@ -56,8 +56,8 @@ router.post('/login', validate(loginSchema), async (req, res) => {
     const token = signToken({
         userId:      user.id,
         username:    user.username,
-        permissions: user.permisos_globales ?? [],
-        groupPermissions: permissionsByGroup  // Permisos por grupo incluidos en JWT
+        permissions: user.permisos_globales ?? [],      // Permisos administrativos globales
+        groupPermissions: permissionsByGroup             // Permisos funcionales por grupo
     });
 
     return ok(res, 200, 'SxAS200', [{
@@ -69,7 +69,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
             email:       user.email,
             telefono:    user.telefono,
             direccion:   user.direccion,
-            permissions: user.permisos_globales ?? [],
+            permissions: user.permisos_globales ?? [],      // Permisos administrativos globales
             groups
         }
     }]);
@@ -98,7 +98,7 @@ router.post('/register', validate(registerSchema), async (req, res) => {
             nombre_completo:  nombre_completo ?? null,
             telefono:         telefono ?? null,
             direccion:        direccion ?? null,
-            permisos_globales: ['group:view', 'tickets:view', 'ticket:add', 'ticket:edit_state', 'user:view', 'user:edit'],
+            permisos_globales: [], // Sin permisos por defecto — el admin los asigna por grupo
             is_active: true
         })
         .select('id, username, email')
@@ -115,7 +115,7 @@ router.post('/users',
     requirePermission('user:add'),
     validate(addUserSchema),
     async (req, res) => {
-        const { username, password, email, permissions = [], group_ids = [] } = req.body;
+        const { username, password, email, nombre_completo, permissions = [], group_ids = [] } = req.body;
 
         const { data: existing } = await supabase
             .from('usuarios')
@@ -133,10 +133,11 @@ router.post('/users',
                 username:          username.trim().toLowerCase(),
                 email:             email.trim().toLowerCase(),
                 password_hash,
-                permisos_globales: permissions,
+                nombre_completo:   nombre_completo ?? null,
+                permisos_globales: permissions ?? [], // Sin permisos por defecto — el admin los asigna por grupo
                 is_active:         true
             })
-            .select('id, username, email, permisos_globales')
+            .select('id, username, email')
             .single();
 
         if (error) return fail(res, 500, 'SxUS500', 'Error al crear usuario');

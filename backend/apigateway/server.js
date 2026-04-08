@@ -5,6 +5,7 @@ const { permissionChecker } = require('./src/middleware/permission-checker');
 const { rateLimiter } = require('./src/middleware/rate-limiter');
 const { serviceProxy } = require('./src/proxy/service-proxy');
 const { ROUTES_MAP } = require('./src/config/routes-map');
+const { logRequest, logError } = require('./src/utils/logger');
 
 const app = Fastify({ logger: true });
 const PORT = process.env.GATEWAY_PORT ?? 3000;
@@ -16,6 +17,36 @@ app.register(require('@fastify/rate-limit'), rateLimiter);
 // ── Auth hook (todas las rutas excepto /api/auth) ───────
 app.addHook('preHandler', jwtValidator);
 app.addHook('preHandler', permissionChecker);
+
+// ── Log de cada request (fire-and-forget, no bloquea) ───
+app.addHook('onResponse', (req, reply, done) => {
+  if (req.url !== '/health') {
+    logRequest({
+      servicio:    'apigateway',
+      metodo:      req.method,
+      endpoint:    req.url,
+      usuario_id:  req.user?.userId ?? null,
+      ip:          req.ip,
+      status_http: reply.statusCode,
+      duracion_ms: Math.round(reply.elapsedTime)
+    });
+  }
+  done();
+});
+
+// ── Log de errores no capturados ─────────────────────────
+app.addHook('onError', (req, _reply, error, done) => {
+  logError({
+    servicio:    'apigateway',
+    metodo:      req.method,
+    endpoint:    req.url,
+    usuario_id:  req.user?.userId ?? null,
+    ip:          req.ip,
+    mensaje:     error.message,
+    stack_trace: error.stack
+  });
+  done();
+});
 
 // ── Proxy dinámico ───────────────────────────────────────
 app.all('/api/*', async (req, reply) => {

@@ -1,4 +1,5 @@
 const { default: fetch } = require('node-fetch');
+const { logError } = require('../utils/logger');
 
 async function serviceProxy(req, reply, routesMap) {
     const prefix = Object.keys(routesMap).find(p => req.url.startsWith(p));
@@ -27,6 +28,15 @@ async function serviceProxy(req, reply, routesMap) {
         return reply.code(upstream.status).send(data);
 
     } catch (err) {
+        logError({
+            servicio:    'apigateway',
+            metodo:      req.method,
+            endpoint:    req.url,
+            usuario_id:  req.user?.userId ?? null,
+            ip:          req.ip,
+            mensaje:     `Bad Gateway: ${err.message}`,
+            stack_trace: err.stack
+        });
         return reply.code(502).send({
             statusCode: 502, intOpCode: 'SxGW502', data: null,
             message: `Bad Gateway: ${err.message}`

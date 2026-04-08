@@ -2,7 +2,7 @@ const { Router } = require('express');
 const { supabase }  = require('../config/database');
 const { hashPassword } = require('../utils/hash');
 const { ok, fail }  = require('../utils/respond');
-const { requireAuth, requirePermission } = require('./middleware');
+const { requireAuth, requirePermission, requireAnyPermission } = require('./middleware');
 const { validate }  = require('./validate');
 const { updateUserSchema } = require('../schemas/user.schema');
 
@@ -11,11 +11,9 @@ const router = Router();
 // GET /api/users/permissions - Obtener permisos del usuario autenticado
 router.get('/permissions', requireAuth, async (req, res) => {
     try {
-        // El JWT fue firmado con { userId, username, permissions }
-        const userId = req.user.userId ?? req.user.id;
-        if (!userId) return fail(res, 401, 'SxUS401', 'Usuario no identificado');
+        const userId = req.user.userId;
+        const groupId = req.headers['x-group-id'];
 
-        // Permisos globales frescos desde la DB (nunca del JWT)
         const { data: userRow, error: userError } = await supabase
             .from('usuarios')
             .select('permisos_globales, is_active')
@@ -25,14 +23,34 @@ router.get('/permissions', requireAuth, async (req, res) => {
         if (userError || !userRow) {
             return fail(res, 404, 'SxUS404', 'Usuario no encontrado');
         }
+
         if (!userRow.is_active) {
-            return fail(res, 403, 'SxUS403', 'Cuenta desactivada');
+            return fail(res, 403, 'SxUS403', 'Usuario inactivo');
         }
 
-        // Permisos del grupo activo (header x-group-id)
-        const groupId   = req.headers['x-group-id'];
-        let groupPerms  = [];
+        // Para superadministradores, enviar TODOS los permisos
+        // Para usuarios normales, solo permisos administrativos globales
+        const rawPerms = userRow.permisos_globales ?? [];
+        const isAdmin = rawPerms.includes('permissions:manage');
+        
+        let globalPerms;
+        if (isAdmin) {
+            // Superadministrador recibe todos sus permisos
+            globalPerms = rawPerms;
+        } else {
+            // Usuario normal recibe solo permisos administrativos
+            const ADMIN_GLOBAL_PERMS = [
+                'groups:manage', 'users:manage', 'permissions:manage',
+                'group:add', 'group:remove', 'group:edit',
+                'user:add', 'user:remove', 'user:edit',
+                'user:deactivated', 'user:activated',
+                'users:view'
+            ];
+            globalPerms = rawPerms.filter(p => ADMIN_GLOBAL_PERMS.includes(p));
+        }
 
+        // Permisos del grupo seleccionado — fuente única de permisos de usuario
+        let groupPerms = [];
         if (groupId) {
             const { data: member } = await supabase
                 .from('grupo_miembros')
@@ -40,12 +58,13 @@ router.get('/permissions', requireAuth, async (req, res) => {
                 .eq('usuario_id', userId)
                 .eq('grupo_id', groupId)
                 .maybeSingle();
+
             groupPerms = member?.permisos ?? [];
         }
 
         return ok(res, 200, 'SxUS200', {
-            permissions:      userRow.permisos_globales ?? [],
-            groupPermissions: groupPerms
+            permissions: globalPerms,     // Solo permisos de administración del sistema
+            groupPermissions: groupPerms  // Permisos asignados por el admin en admin/groups
         });
 
     } catch (err) {
@@ -55,7 +74,7 @@ router.get('/permissions', requireAuth, async (req, res) => {
 });
 
 // GET /api/users
-router.get('/', requireAuth, requirePermission('users:view'), async (_req, res) => {
+router.get('/', requireAuth, requireAnyPermission(['users:view', 'users:manage']), async (_req, res) => {
     const { data, error } = await supabase
         .from('usuarios')
         .select('id, username, email, nombre_completo, permisos_globales, is_active, creado_en')
@@ -69,23 +88,38 @@ router.get('/', requireAuth, requirePermission('users:view'), async (_req, res) 
 router.get('/:id', requireAuth, requirePermission('user:view'), async (req, res) => {
     const { data: user, error } = await supabase
         .from('usuarios')
-        .select('id, username, email, nombre_completo, telefono, direccion, permisos_globales, is_active, creado_en, password_hash')
+        .select('id, username, email, nombre_completo, telefono, direccion, permisos_globales, is_active, creado_en')
         .eq('id', req.params.id)
         .single();
 
     if (error || !user) return fail(res, 404, 'SxUS404', 'Usuario no encontrado');
 
-    const { data: miembros } = await supabase
+    // Obtener grupos del usuario con sus permisos
+    const { data: groupsData, error: groupsError } = await supabase
         .from('grupo_miembros')
-        .select('grupos(id, nombre), permisos')
+        .select(`
+            grupos(id, nombre),
+            permisos
+        `)
         .eq('usuario_id', req.params.id);
 
-    const groups = (miembros ?? []).map(m => ({
-        id: m.grupos.id,
-        name: m.grupos.nombre,
-        permisos: m.permisos ?? []
+    if (groupsError) {
+        console.error('Error obteniendo grupos del usuario:', groupsError);
+    }
+
+    // Formatear los grupos para el frontend
+    const groups = (groupsData ?? []).map(item => ({
+        id: item.grupos.id,
+        name: item.grupos.nombre,
+        permisos: item.permisos || []
     }));
-    return ok(res, 200, 'SxUS200', [{ ...user, groups }]);
+
+    const userWithGroups = {
+        ...user,
+        groups: groups
+    };
+
+    return ok(res, 200, 'SxUS200', [userWithGroups]);
 });
 
 // PUT /api/users/:id
@@ -94,7 +128,7 @@ router.put('/:id',
     requirePermission('user:edit'),
     validate(updateUserSchema),
     async (req, res) => {
-        const { password, group_ids, permissions, ...rest } = req.body;
+        const { password, permissions, ...rest } = req.body;
         const updates = { ...rest };
 
         if (password) {
@@ -113,27 +147,19 @@ router.put('/:id',
             return fail(res, 500, 'SxUS500', 'Error al actualizar usuario');
         }
 
-        if (Array.isArray(group_ids)) {
-            await supabase.from('grupo_miembros').delete().eq('usuario_id', req.params.id);
-            if (group_ids.length > 0) {
-                const rows = group_ids.map(gid => ({ usuario_id: req.params.id, grupo_id: gid }));
-                await supabase.from('grupo_miembros').insert(rows);
-            }
-        }
-
         return ok(res, 200, 'SxUS200', [data]);
     }
 );
 
 // DELETE /api/users/:id
-router.delete('/:id', requireAuth, requirePermission('user:delete'), async (req, res) => {
+router.delete('/:id', requireAuth, requireAnyPermission(['user:remove', 'user:delete']), async (req, res) => {
     const { error } = await supabase.from('usuarios').delete().eq('id', req.params.id);
     if (error) return fail(res, 500, 'SxUS500', 'Error al eliminar usuario');
     return ok(res, 200, 'SxUS200', null);
 });
 
-// PATCH /api/users/:id/deactivate  — requiere user:delete (o un permiso específico de admin)
-router.patch('/:id/deactivate', requireAuth, requirePermission('user:delete'), async (req, res) => {
+// PATCH /api/users/:id/deactivate
+router.patch('/:id/deactivate', requireAuth, requireAnyPermission(['user:remove', 'user:delete']), async (req, res) => {
     const { data, error } = await supabase
         .from('usuarios')
         .update({ is_active: false })
@@ -158,11 +184,24 @@ router.patch('/:id/activate', requireAuth, requirePermission('user:add'), async 
     return ok(res, 200, 'SxUS200', [data]);
 });
 
-// PUT /api/users/:id/permissions  — requiere permissions:manage
+// PUT /api/users/:id/permissions  - requiere permissions:manage
+// Gestiona permisos administrativos globales del usuario
 router.put('/:id/permissions', requireAuth, requirePermission('permissions:manage'), async (req, res) => {
     const { permissions } = req.body;
     if (!Array.isArray(permissions)) {
         return fail(res, 400, 'SxUS400', 'permissions debe ser un array');
+    }
+
+    // Validar que solo sean permisos administrativos globales
+    const adminPermissions = [
+        'users:manage', 'user:add', 'user:remove', 'user:deactivated', 'user:activated',
+        'groups:manage', 'group:add', 'group:remove', 'permissions:manage',
+        'user:view', 'group:view'
+    ];
+    
+    const invalidPerms = permissions.filter(p => !adminPermissions.includes(p));
+    if (invalidPerms.length > 0) {
+        return fail(res, 400, 'SxUS400', `Permisos no válidos para permisos globales: ${invalidPerms.join(', ')}`);
     }
 
     const { data, error } = await supabase

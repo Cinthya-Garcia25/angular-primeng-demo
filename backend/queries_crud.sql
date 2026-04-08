@@ -240,7 +240,6 @@ INSERT INTO permisos (codigo, nombre, descripcion) VALUES
     ('group:remove:member',     'Quitar miembro',             'Permite quitar miembros de un grupo'),
     -- User
     ('user:add',                'Crear usuario',              'Permite registrar nuevos usuarios'),
-    ('user:view:all',           'Ver todos los usuarios',     'Permite listar todos los usuarios del sistema'),
     ('user:edit',               'Editar usuario',             'Permite editar datos de un usuario'),
     ('user:remove',             'Eliminar usuario',           'Permite eliminar un usuario'),
     ('user:edit:permission',    'Editar permisos',            'Permite modificar los permisos de un usuario'),

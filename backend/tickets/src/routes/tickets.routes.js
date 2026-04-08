@@ -63,26 +63,28 @@ function verifyToken(req) {
 async function fetchPerms(userId, groupId) {
     const { data, error } = await supabase
         .from('usuarios')
-        .select('permisos_globales, is_active')
+        .select('is_active, permisos_globales')
         .eq('id', userId)
         .single();
 
     if (error || !data || !data.is_active) return [];
 
-    let perms = data.permisos_globales ?? [];
+    const globalPerms = data.permisos_globales ?? [];
 
+    let groupPerms = [];
     if (groupId) {
         const { data: permsData } = await supabase
-            .from('grupo_usuario_permisos')
-            .select('permisos:permiso_id(codigo)')
+            .from('grupo_miembros')
+            .select('permisos')
             .eq('usuario_id', userId)
-            .eq('grupo_id', groupId);
-        
-        const groupPerms = (permsData ?? []).map(p => p.permisos.codigo);
-        perms = [...new Set([...perms, ...groupPerms])];
+            .eq('grupo_id', groupId)
+            .maybeSingle();
+
+        groupPerms = permsData?.permisos ?? [];
     }
 
-    return perms;
+    // Combinar permisos administrativos globales + permisos funcionales del grupo
+    return [...new Set([...globalPerms, ...groupPerms])];
 }
 
 const TICKET_SELECT = `
