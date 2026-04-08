@@ -6,16 +6,10 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 // PrimeNG
-import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
-import { AvatarModule } from 'primeng/avatar';
 import { SkeletonModule } from 'primeng/skeleton';
-import { ProgressBarModule } from 'primeng/progressbar';
-import { DividerModule } from 'primeng/divider';
 
 // Servicios y modelos
 import { TicketsService, Ticket } from '../../services/tickets.service';
@@ -62,16 +56,10 @@ const GROUP_COLORS = [
   imports: [
     CommonModule,
     FormsModule,
-    CardModule,
     ChartModule,
     SelectModule,
-    TableModule,
-    TagModule,
     ButtonModule,
-    AvatarModule,
     SkeletonModule,
-    ProgressBarModule,
-    DividerModule
   ],
   templateUrl: './dashboard.page.html',
   styleUrl: './dashboard.page.css'
@@ -114,13 +102,6 @@ export class DashboardComponent implements OnInit {
       count: this.tickets().filter(t => t.prioridades?.codigo === codigo).length,
       color: PRIORITY_ACCENT[codigo]
     }));
-  });
-
-  readonly recentTickets = computed(() => {
-    return this.tickets()
-      .slice()
-      .sort((a, b) => new Date(b.creado_en).getTime() - new Date(a.creado_en).getTime())
-      .slice(0, 5);
   });
 
   // ── Datos para gráficos ──────────────────────────────────────────────────
@@ -210,14 +191,18 @@ export class DashboardComponent implements OnInit {
   readonly doughnutChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '65%',
+    cutout: '60%',
+    layout: {
+      padding: { bottom: 4 }
+    },
     plugins: {
       legend: {
         position: 'bottom' as const,
         labels: {
-          padding: 16,
+          padding: 8,
           usePointStyle: true,
-          pointStyle: 'circle'
+          pointStyle: 'circle',
+          font: { size: 11 }
         }
       }
     }
@@ -304,43 +289,4 @@ export class DashboardComponent implements OnInit {
   }
 
 
-  // ── Helpers de presentación ──────────────────────────────────────────────
-  statusLabel(codigo: string): string {
-    return STATUS_LABEL[codigo] || codigo;
-  }
-
-  statusSeverity(codigo: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
-    switch (codigo) {
-      case 'hecho': return 'success';
-      case 'pendiente': return 'info';
-      case 'en_progreso': return 'warn';
-      case 'revision': return 'secondary';
-      case 'bloqueado': return 'danger';
-      default: return 'info';
-    }
-  }
-
-  priorityLabel(codigo: string): string {
-    return PRIORITY_LABEL[codigo] || codigo;
-  }
-
-  prioritySeverity(codigo: string): 'danger' | 'warn' | 'success' {
-    switch (codigo) {
-      case 'alta': return 'danger';
-      case 'media': return 'warn';
-      case 'baja': return 'success';
-      default: return 'success';
-    }
-  }
-
-  formatDate(iso: string | null | undefined): string {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('es-MX');
-  }
-
-  assigneeInitial(ticket: Ticket): string {
-    const username = ticket.asignado?.username || '?';
-    return username.charAt(0).toUpperCase();
-  }
 }
