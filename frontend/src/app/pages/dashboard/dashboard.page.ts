@@ -2,6 +2,8 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 // PrimeNG
 import { CardModule } from 'primeng/card';
@@ -17,7 +19,6 @@ import { DividerModule } from 'primeng/divider';
 
 // Servicios y modelos
 import { TicketsService, Ticket } from '../../services/tickets.service';
-import { PermissionsService } from '../../services/permissions.service';
 import { DynamicPermissionsService } from '../../services/dynamic-permissions.service';
 import { AuthGroup } from '../../models/auth.model';
 
@@ -79,7 +80,6 @@ export class DashboardComponent implements OnInit {
   private readonly ticketsSvc   = inject(TicketsService);
   private readonly router       = inject(Router);
   private readonly dynamicPermsSvc = inject(DynamicPermissionsService);
-  private readonly permsSvc        = inject(PermissionsService);
 
   // ── Constantes expuestas para el template ──────────────────────────────────
   readonly STATUS_ACCENT = STATUS_ACCENT;
@@ -264,32 +264,29 @@ export class DashboardComponent implements OnInit {
   // ── Carga de tickets de todos los grupos ──────────────────────────────────
   private loadAllTickets(): void {
     this.loading.set(true);
-    
+
     if (this.groups.length === 0) {
       this.tickets.set([]);
       this.loading.set(false);
       return;
     }
 
-    // Cargar tickets de todos los grupos
-    const groupIds = this.groups.map(g => g.id);
-    this.ticketsSvc.getAll().subscribe({
-      next: (tickets) => {
-        // Si tiene permisos de tickets, mostrar todos los tickets
-        const allPermissions = this.permsSvc.getEffectivePermissions();
-        const hasTicketPermission = allPermissions.some((p: string) =>
-          p.includes('ticket:view') || p.includes('tickets:view')
-        );
-        
-        if (hasTicketPermission) {
-          // Usuario con permisos: ve todos los tickets
-          this.tickets.set(tickets);
-        } else {
-          // Usuario sin permisos: solo tickets de sus grupos
-          const userTickets = tickets.filter(t => groupIds.includes(t.grupos?.id));
-          this.tickets.set(userTickets);
-        }
-        
+    // Cargar tickets por cada grupo con su x-group-id header
+    // Así el backend puede verificar permisos de grupo correctamente
+    const requests = this.groups.map(g =>
+      this.ticketsSvc.getAll(g.id).pipe(catchError(() => of([] as Ticket[])))
+    );
+
+    forkJoin(requests).subscribe({
+      next: (results) => {
+        // Combinar y deduplicar tickets de todos los grupos
+        const seen = new Set<string>();
+        const unique = results.flat().filter(t => {
+          if (seen.has(t.id)) return false;
+          seen.add(t.id);
+          return true;
+        });
+        this.tickets.set(unique);
         this.loading.set(false);
       },
       error: () => {

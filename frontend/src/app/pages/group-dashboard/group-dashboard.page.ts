@@ -123,12 +123,13 @@ export class GroupDashboardPageComponent implements OnInit {
 
   /** Verificar si puede cambiar estado de tickets en el grupo */
   get canChangeTicketStatus(): boolean {
-    // Los administradores con permissions:manage pueden cambiar estados
     if (this.permsSvc.hasPermission('permissions:manage')) {
       return true;
     }
-    // Usuarios normales necesitan permiso de grupo
-    return this.hasGroupPermission('ticket:edit_state');
+    // El permiso puede estar guardado con ':' o '_' según la versión
+    return this.permsSvc.hasAnyPermission(['ticket:edit:state', 'ticket:edit_state']) ||
+           this.hasGroupPermission('ticket:edit:state') ||
+           this.hasGroupPermission('ticket:edit_state');
   }
 
   /** Verificar si puede eliminar tickets en el grupo */
