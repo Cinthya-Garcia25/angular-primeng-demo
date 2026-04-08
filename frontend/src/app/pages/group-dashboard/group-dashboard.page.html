@@ -262,9 +262,9 @@
                   <div class="kanban-card surface-0 border-1 surface-border border-round-lg flex
                               hover:shadow-2 hover:border-indigo-200 transition-all transition-duration-150"
                        [class.opacity-50]="draggedTicketId === t.id"
-                       [draggable]="canChangeTicketStatus"
-                       (dragstart)="canChangeTicketStatus ? onDragStart($event, t) : null"
-                       (dragend)="canChangeTicketStatus ? onDragEnd() : null"
+                       [draggable]="canMoveTicket(t)"
+                       (dragstart)="canMoveTicket(t) ? onDragStart($event, t) : null"
+                       (dragend)="canMoveTicket(t) ? onDragEnd() : null"
                        (click)="onTicketClick(t)">
 
                     <!-- Franja de prioridad -->

@@ -192,10 +192,10 @@
       </ng-template>
       <ng-template pTemplate="body" let-ticket>
         <tr>
-          <td><strong>#{{ ticket.id }}</strong> - {{ ticket.title }}</td>
-          <td><p-tag [value]="statusLabel(ticket.status)" [severity]="stateSeverity(ticket.status)"></p-tag></td>
-          <td><p-tag [value]="priorityLabel(ticket.priority)" [severity]="prioritySeverity(ticket.priority)"></p-tag></td>
-          <td>{{ ticket.dueDate ? (ticket.dueDate | date:'dd/MM/yyyy') : 'Sin fecha' }}</td>
+          <td><strong>#{{ ticket.id }}</strong> - {{ ticket.titulo }}</td>
+          <td><p-tag [value]="statusLabel(ticket.estados?.codigo)" [severity]="stateSeverity(ticket.estados?.codigo)"></p-tag></td>
+          <td><p-tag [value]="priorityLabel(ticket.prioridades?.codigo)" [severity]="prioritySeverity(ticket.prioridades?.codigo)"></p-tag></td>
+          <td>{{ ticket.fecha_final ? (ticket.fecha_final | date:'dd/MM/yyyy') : 'Sin fecha' }}</td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">

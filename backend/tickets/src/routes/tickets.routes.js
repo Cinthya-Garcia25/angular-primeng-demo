@@ -237,15 +237,15 @@ async function ticketsRoutes(fastify) {
 
     // PATCH /api/tickets/:id/status
     // Acepta { estado_id } (UUID) o { estado_codigo } (ej. 'pendiente')
-    // ticket:edit o ticket:edit_state permiten mover cualquier ticket asignado;
-    // ticket:edit también permite mover tickets de otros usuarios.
+    // ticket:edit_state permite mover el estado; admin (permissions:manage) puede mover cualquier ticket,
+    // usuario normal solo puede mover tickets asignados a él.
     fastify.patch('/:id/status', async (req, reply) => {
         const perms        = req.user.permissions;
-        const canEditState = perms.includes('ticket:edit_state') ||
-                             perms.includes('ticket:edit');
+        const canEditState = perms.includes('ticket:edit_state') || perms.includes('ticket:edit:state');
+        const isAdmin      = perms.includes('permissions:manage');
 
         if (!canEditState) {
-            return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:edit_state o ticket:edit');
+            return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:edit_state');
         }
 
         const { estado_id, estado_codigo } = req.body;
@@ -255,6 +255,10 @@ async function ticketsRoutes(fastify) {
         const { data: ticket } = await supabase
             .from('tickets').select('id, asignado_id').eq('id', req.params.id).single();
         if (!ticket) return fail(reply, 404, 'SxTS404', 'Ticket no encontrado');
+
+        if (!isAdmin && ticket.asignado_id !== req.user.userId) {
+            return fail(reply, 403, 'SxTS403', 'Solo puedes mover el estado de tickets asignados a ti');
+        }
 
         // Buscar estado por UUID o por código
         let estadoQuery = supabase.from('estados').select('id, codigo');

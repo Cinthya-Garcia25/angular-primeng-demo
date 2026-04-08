@@ -20,7 +20,8 @@ const PERMISSION_RULES = [
     { method: 'DELETE', test: url => /^\/api\/groups\/[^/]+\/members\/[^/]+$/.test(url), permission: 'group:edit'                                 },
     { method: 'PUT',    test: url => /^\/api\/groups\/[^/]+\/members\/[^/]+\/permissions$/.test(url), permission: ['group:edit', 'permissions:manage'] },
     { method: 'GET',    test: url => url === '/api/groups',                              permission: 'group:view'                                 },
-    { method: 'GET',    test: url => /^\/api\/groups\/[^/]+$/.test(url),                 permission: 'group:view'                                 },
+    // GET /api/groups/:id no requiere permiso en el gateway: cualquier usuario autenticado
+    // puede solicitar los datos de un grupo específico. El servicio de grupos valida la membresía.
 
     // Tickets
     { method: 'POST',   test: url => url === '/api/tickets',                             permission: 'ticket:add'                                 },

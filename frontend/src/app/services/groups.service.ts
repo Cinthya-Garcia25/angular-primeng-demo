@@ -83,7 +83,8 @@ export class GroupsService {
   }
 
   getById(id: string) {
-    return this.http.get<ApiResponse<GroupDetail>>(`${this.baseUrl}/${id}`).pipe(
+    const headers = new HttpHeaders().set('x-group-id', id);
+    return this.http.get<ApiResponse<GroupDetail>>(`${this.baseUrl}/${id}`, { headers }).pipe(
       map((res: ApiResponse<GroupDetail>) => res.data?.[0] ?? null)
     );
   }

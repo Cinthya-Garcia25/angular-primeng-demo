@@ -85,7 +85,7 @@ export class GroupDashboardPageComponent implements OnInit {
   readonly groups: AuthGroup[] = JSON.parse(sessionStorage.getItem('authGroups') || '[]');
   selectedGroup: AuthGroup | null = null;
   loadingGroupPerms = false;
-  groupMembers: GroupMember[] = [];
+  groupMembers = signal<GroupMember[]>([]);
 
   readonly currentUser = (sessionStorage.getItem('authUsername') || '').trim();
 
@@ -165,9 +165,9 @@ export class GroupDashboardPageComponent implements OnInit {
   get assigneeFilterOptions(): { label: string; value: string }[] {
     return [
       { label: 'Sin asignar', value: '' },
-      ...this.groupMembers
-        .map(m => ({ label: m.usuarios.username, value: m.usuarios.id }))
-        .sort((a, b) => a.label.localeCompare(b.label))
+      ...this.groupMembers()
+        .map((m: GroupMember) => ({ label: m.usuarios.username, value: m.usuarios.id }))
+        .sort((a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label))
     ];
   }
 
@@ -277,9 +277,9 @@ export class GroupDashboardPageComponent implements OnInit {
   get memberOptionsWithEmpty(): { label: string; value: string }[] {
     return [
       { label: 'Sin asignar', value: '' },
-      ...this.groupMembers
-        .map(m => ({ label: m.usuarios.username, value: m.usuarios.id }))
-        .sort((a, b) => a.label.localeCompare(b.label))
+      ...this.groupMembers()
+        .map((m: GroupMember) => ({ label: m.usuarios.username, value: m.usuarios.id }))
+        .sort((a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label))
     ];
   }
 
@@ -496,7 +496,7 @@ export class GroupDashboardPageComponent implements OnInit {
     this.groupsSvc.getById(groupId).subscribe({
       next: (g) => {
         if (g) {
-          this.groupMembers = g.miembros;
+          this.groupMembers.set(g.miembros);
         }
       }
     });
@@ -666,7 +666,7 @@ export class GroupDashboardPageComponent implements OnInit {
         );
         // Sincronizar con el backend en segundo plano
         this.ticketsSvc.updateStatus(ticket.id, targetCodigo).subscribe({
-          error: () => this.loadTickets() // revertir solo si falla
+          error: () => this.loadTickets()
         });
       }
     }

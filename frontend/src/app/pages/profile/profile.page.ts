@@ -13,9 +13,9 @@ import { PasswordModule } from 'primeng/password';
 import { ToastModule } from 'primeng/toast';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { TicketsMockService } from '../../services/tickets-mock.service';
-import { Ticket } from '../../models/ticket.model';
-import { Subscription } from 'rxjs';
+import { TicketsService, Ticket } from '../../services/tickets.service';
+import { GroupsService } from '../../services/groups.service';
+import { Subscription, forkJoin } from 'rxjs';
 import { DatePipe } from '@angular/common';
 import { PermissionsService } from '../../services/permissions.service';
 import { DynamicPermissionsService } from '../../services/dynamic-permissions.service';
@@ -89,7 +89,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly messageService = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly ticketsMockService = inject(TicketsMockService);
+  private readonly ticketsSvc = inject(TicketsService);
+  private readonly groupsSvc = inject(GroupsService);
   private readonly permissionsService = inject(PermissionsService);
   private readonly dynamicPermissionsService = inject(DynamicPermissionsService);
   private readonly http = inject(HttpClient);
@@ -166,17 +167,34 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   }
 
   private loadUserTickets(): void {
+    const authUserId = sessionStorage.getItem('authUserId') ?? '';
+    const authUser = (sessionStorage.getItem('authUser') ?? '').toLowerCase();
+
     this.sub.add(
-      this.ticketsMockService.getAll().subscribe((allTickets) => {
-        const currentAuthUser = (sessionStorage.getItem('authUser') ?? '').toLowerCase();
-        const fullName = (this.profileForm.get('fullName')?.value ?? '').toLowerCase();
-        this.userTickets = allTickets.filter(ticket => {
-          const assignee = (ticket.assignee || '').toLowerCase();
-          return assignee === currentAuthUser || (fullName && assignee === fullName) || assignee.includes(currentAuthUser);
+      this.groupsSvc.getAll().pipe(catchError(() => of([]))).subscribe(groups => {
+        if (groups.length === 0) return;
+        const requests = groups.map(g =>
+          this.ticketsSvc.getAll(g.id).pipe(catchError(() => of([] as Ticket[])))
+        );
+        forkJoin(requests).subscribe(results => {
+          const seen = new Set<string>();
+          const all = results.flat().filter(t => {
+            if (seen.has(t.id)) return false;
+            seen.add(t.id);
+            return true;
+          });
+          this.userTickets = all.filter(t =>
+            t.asignado?.id === authUserId ||
+            t.asignado?.username?.toLowerCase() === authUser
+          );
+          this.openTicketsCount = this.userTickets.filter(t => t.estados?.codigo === 'pendiente').length;
+          this.inProgressTicketsCount = this.userTickets.filter(t =>
+            t.estados?.codigo === 'en_progreso' || t.estados?.codigo === 'revision'
+          ).length;
+          this.closedTicketsCount = this.userTickets.filter(t =>
+            t.estados?.codigo === 'hecho' || t.estados?.codigo === 'bloqueado'
+          ).length;
         });
-        this.openTicketsCount = this.userTickets.filter(t => t.status === 'pendiente').length;
-        this.inProgressTicketsCount = this.userTickets.filter(t => t.status === 'en_progreso' || t.status === 'revision').length;
-        this.closedTicketsCount = this.userTickets.filter(t => t.status === 'hecho' || t.status === 'bloqueado').length;
       })
     );
   }

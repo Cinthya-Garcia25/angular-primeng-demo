@@ -43,15 +43,6 @@ export const routes: Routes = [
           )
       },
 
-      // Lista de tickets del grupo seleccionado
-      {
-        path: 'groups/:id/list',
-        canActivate: [permissionGuard],
-        data: { permissions: ['ticket:view'] },
-        loadComponent: () =>
-          import('./pages/tickets/tickets.page').then((m) => m.TicketsPageComponent)
-      },
-
       // Kanban del grupo seleccionado (tablero con tickets por estado)
       {
         path: 'groups/:id/kanban',
