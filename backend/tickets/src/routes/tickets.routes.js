@@ -284,8 +284,8 @@ async function ticketsRoutes(fastify) {
 
     // POST /api/tickets/:id/comments  — requiere ticket:edit:comment
     fastify.post('/:id/comments', { schema: { body: addCommentSchema } }, async (req, reply) => {
-        if (!req.user.permissions.includes('ticket:edit:comment')) {
-            return fail(reply, 403, 'SxCS403', 'Permiso requerido: ticket:edit:comment');
+        if (!req.user.permissions.includes('ticket:edit') && !req.user.permissions.includes('ticket:edit:comment')) {
+            return fail(reply, 403, 'SxCS403', 'Permiso requerido: ticket:edit');
         }
 
         const { data, error } = await supabase

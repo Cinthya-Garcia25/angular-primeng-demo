@@ -35,22 +35,27 @@ interface GroupWithPerms {
   permisos: string[];
 }
 
+// Permisos globales: aplican al usuario independientemente del grupo.
+const ALL_GLOBAL_PERMISSIONS: { label: string; value: string }[] = [
+  { label: 'Ver perfil propio',   value: 'user:view'        },
+  { label: 'Editar perfil propio', value: 'user:edit'       },
+  { label: 'Desactivar cuenta',   value: 'user:deactivated' },
+  { label: 'Activar cuenta',      value: 'user:activated'   },
+];
+
+// Permisos asignables por grupo: solo acciones dentro del workspace.
+// Los permisos de administración global (groups:manage, users:manage, group:add, etc.)
+// se asignan a nivel de usuario, no por grupo.
 const ALL_GROUP_PERMISSIONS: { label: string; value: string; group: string }[] = [
-  { label: 'Ver grupos',             value: 'group:view',          group: 'Grupos'    },
-  { label: 'Crear grupos',           value: 'group:add',           group: 'Grupos'    },
-  { label: 'Editar grupos',          value: 'group:edit',          group: 'Grupos'    },
-  { label: 'Eliminar grupos',        value: 'group:remove',        group: 'Grupos'    },
+  { label: 'Ver grupo',              value: 'group:view',          group: 'Grupos'    },
   { label: 'Ver tickets',            value: 'ticket:view',         group: 'Tickets'   },
   { label: 'Ver todos los tickets',  value: 'tickets:view',        group: 'Tickets'   },
   { label: 'Crear tickets',          value: 'ticket:add',          group: 'Tickets'   },
   { label: 'Editar tickets',         value: 'ticket:edit',         group: 'Tickets'   },
   { label: 'Cambiar estado',         value: 'ticket:edit:state',   group: 'Tickets'   },
   { label: 'Eliminar tickets',       value: 'ticket:edit:delete',  group: 'Tickets'   },
-  { label: 'Ver perfil propio',      value: 'user:view',           group: 'Usuarios'  },
-  { label: 'Ver todos los usuarios', value: 'users:view',         group: 'Usuarios'  },
-  { label: 'Crear usuarios',         value: 'user:add',            group: 'Usuarios'  },
-  { label: 'Editar usuarios',        value: 'user:edit',           group: 'Usuarios'  },
-  { label: 'Eliminar usuarios',      value: 'user:remove',         group: 'Usuarios'  },
+  { label: 'Gestionar grupos',       value: 'groups:manage',       group: 'Sistema'   },
+  { label: 'Gestionar usuarios',     value: 'users:manage',        group: 'Sistema'   },
   { label: 'Gestionar permisos',     value: 'permissions:manage',  group: 'Sistema'   },
 ];
 
@@ -82,6 +87,10 @@ export class UserManagementPageComponent implements OnInit {
   editingUserId     = '';
   editingUsername   = '';
   searchValue       = '';
+
+  // Permisos globales del usuario en edición
+  editingUserGlobalPerms: string[] = [];
+  readonly allGlobalPermissions = ALL_GLOBAL_PERMISSIONS;
 
   // Permisos por grupo del usuario en edición
   editingUserGroups: GroupWithPerms[] = [];
@@ -172,9 +181,20 @@ export class UserManagementPageComponent implements OnInit {
 
   // ── Dialogs ──────────────────────────────────────────────────────────────
 
+  hasGlobalPerm(perm: string): boolean {
+    return this.editingUserGlobalPerms.includes(perm);
+  }
+
+  toggleGlobalPerm(perm: string): void {
+    const idx = this.editingUserGlobalPerms.indexOf(perm);
+    if (idx >= 0) this.editingUserGlobalPerms.splice(idx, 1);
+    else          this.editingUserGlobalPerms.push(perm);
+  }
+
   openCreateDialog(): void {
     this.isEditing     = false;
     this.editingUserId = '';
+    this.editingUserGlobalPerms = [];
     this.editingUserGroups = [];
     this.groupPermissions  = {};
     this.userForm.reset({ username: '', nombre_completo: '', email: '', password: '' });
@@ -187,6 +207,9 @@ export class UserManagementPageComponent implements OnInit {
     this.isEditing       = true;
     this.editingUserId   = user.id;
     this.editingUsername = user.username;
+    this.editingUserGlobalPerms = [...(user.permisos_globales ?? [])].filter(
+      p => ALL_GLOBAL_PERMISSIONS.some(g => g.value === p)
+    );
     this.editingUserGroups = [];
     this.groupPermissions  = {};
 
@@ -225,9 +248,10 @@ export class UserManagementPageComponent implements OnInit {
   }
 
   closeDialog(): void {
-    this.userDialogVisible = false;
-    this.editingUserGroups = [];
-    this.groupPermissions  = {};
+    this.userDialogVisible      = false;
+    this.editingUserGlobalPerms = [];
+    this.editingUserGroups      = [];
+    this.groupPermissions       = {};
   }
 
   // ── Save ─────────────────────────────────────────────────────────────────
@@ -240,6 +264,7 @@ export class UserManagementPageComponent implements OnInit {
       const body: any = { username, email, nombre_completo: nombre_completo?.trim() || null };
       this.http.put(`/api/users/${this.editingUserId}`, body).subscribe({
         next: () => {
+          this.saveGlobalPermissions();
           this.saveGroupPermissions();
           this.msgSvc.add({ severity: 'success', summary: 'Actualizado', detail: `Se actualizó ${username}` });
           this.loadUsers();
@@ -257,6 +282,16 @@ export class UserManagementPageComponent implements OnInit {
         error: (err) => this.msgSvc.add({ severity: 'error', summary: 'Error', detail: err.error?.message ?? 'Error al crear usuario' })
       });
     }
+  }
+
+  private saveGlobalPermissions(): void {
+    // Toma los permisos globales actuales del usuario y reemplaza solo los del perfil
+    const user = this.users.find(u => u.id === this.editingUserId);
+    const currentGlobal = user?.permisos_globales ?? [];
+    const profilePerms  = ALL_GLOBAL_PERMISSIONS.map(p => p.value);
+    const otherPerms    = currentGlobal.filter(p => !profilePerms.includes(p));
+    const merged        = [...new Set([...otherPerms, ...this.editingUserGlobalPerms])];
+    this.http.put(`/api/users/${this.editingUserId}/permissions`, { permissions: merged }).subscribe();
   }
 
   private saveGroupPermissions(): void {

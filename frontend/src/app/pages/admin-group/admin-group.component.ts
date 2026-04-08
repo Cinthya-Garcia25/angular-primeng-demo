@@ -23,23 +23,20 @@ import { UsersService, User } from '../../services/users.service';
 import { DynamicPermissionsService } from '../../services/dynamic-permissions.service';
 import { PermissionsService } from '../../services/permissions.service';
 
+// Permisos asignables por grupo: solo acciones dentro del workspace.
+// Los permisos de administración global (groups:manage, users:manage, group:add, etc.)
+// se asignan a nivel de usuario, no por grupo.
 const ALL_PERMISSIONS: { label: string; value: string; group: string }[] = [
-  { label: 'Ver grupos',             value: 'group:view',          group: 'Grupos' },
-  { label: 'Crear grupos',           value: 'group:add',           group: 'Grupos' },
-  { label: 'Editar grupos',          value: 'group:edit',          group: 'Grupos' },
-  { label: 'Eliminar grupos',        value: 'group:remove',        group: 'Grupos' },
+  { label: 'Ver grupo',              value: 'group:view',          group: 'Grupos'  },
   { label: 'Ver tickets',            value: 'ticket:view',         group: 'Tickets' },
   { label: 'Ver todos los tickets',  value: 'tickets:view',        group: 'Tickets' },
   { label: 'Crear tickets',          value: 'ticket:add',          group: 'Tickets' },
   { label: 'Editar tickets',         value: 'ticket:edit',         group: 'Tickets' },
   { label: 'Cambiar estado',         value: 'ticket:edit:state',   group: 'Tickets' },
-  { label: 'Eliminar tickets',       value: 'ticket:edit:delete',   group: 'Tickets' },
-  { label: 'Ver perfil propio',      value: 'user:view',           group: 'Usuarios' },
-  { label: 'Ver todos los usuarios', value: 'users:view',         group: 'Usuarios' },
-  { label: 'Crear usuarios',         value: 'user:add',            group: 'Usuarios' },
-  { label: 'Editar usuarios',        value: 'user:edit',           group: 'Usuarios' },
-  { label: 'Eliminar usuarios',      value: 'user:remove',         group: 'Usuarios' },
-  { label: 'Gestionar permisos',     value: 'permissions:manage',  group: 'Sistema' },
+  { label: 'Eliminar tickets',       value: 'ticket:edit:delete',  group: 'Tickets' },
+  { label: 'Gestionar grupos',       value: 'groups:manage',       group: 'Sistema'  },
+  { label: 'Gestionar usuarios',     value: 'users:manage',        group: 'Sistema'  },
+  { label: 'Gestionar permisos',     value: 'permissions:manage',  group: 'Sistema'  },
 ];
 
 @Component({

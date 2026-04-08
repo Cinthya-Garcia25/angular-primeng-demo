@@ -110,6 +110,27 @@
       </div>
     }
 
+    <!-- ── Permisos globales de perfil ── -->
+    @if (isEditing && canManageGroupPerms) {
+      <p-divider align="left">
+        <span class="section-label"><i class="pi pi-user mr-2"></i>Permisos de Perfil</span>
+      </p-divider>
+      <div class="perm-checks-row">
+        @for (p of allGlobalPermissions; track p.value) {
+          <div class="perm-check-item">
+            <p-checkbox
+              [inputId]="'gp_global_' + p.value"
+              [binary]="true"
+              [ngModel]="hasGlobalPerm(p.value)"
+              (ngModelChange)="toggleGlobalPerm(p.value)"
+              [ngModelOptions]="{ standalone: true }">
+            </p-checkbox>
+            <label [for]="'gp_global_' + p.value" class="perm-label">{{ p.label }}</label>
+          </div>
+        }
+      </div>
+    }
+
     <!-- ── Permisos por grupo (solo si admin tiene users:manage) ── -->
     @if (isEditing && canManageGroupPerms) {
       <p-divider align="left">
@@ -130,7 +151,6 @@
               <span class="group-perm-name">
                 <i class="pi pi-users mr-2"></i>{{ grp.name }}
               </span>
-              <p-tag [value]="groupPermCount(grp.id) + ' permisos'" severity="info" />
             </div>
 
             @for (cat of permCategories; track cat) {

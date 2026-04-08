@@ -44,12 +44,22 @@ router.get('/permissions', requireAuth, async (req, res) => {
                 'group:add', 'group:remove', 'group:edit',
                 'user:add', 'user:remove', 'user:edit',
                 'user:deactivated', 'user:activated',
-                'users:view'
+                'user:view', 'users:view'
             ];
             globalPerms = rawPerms.filter(p => ADMIN_GLOBAL_PERMS.includes(p));
         }
 
-        // Permisos del grupo seleccionado — fuente única de permisos de usuario
+        // Permisos del grupo seleccionado — solo permisos de trabajo dentro del workspace.
+        // Los permisos de administración global nunca se otorgan vía grupo para evitar
+        // que un usuario normal pueda crear/eliminar grupos o gestionar usuarios del sistema.
+        const GROUP_SCOPED_PERMS = [
+            'group:view',
+            'ticket:view', 'tickets:view',
+            'ticket:add',
+            'ticket:edit', 'ticket:edit:state', 'ticket:edit:delete',
+            'groups:manage', 'users:manage', 'permissions:manage',
+        ];
+
         let groupPerms = [];
         if (groupId) {
             const { data: member } = await supabase
@@ -59,7 +69,7 @@ router.get('/permissions', requireAuth, async (req, res) => {
                 .eq('grupo_id', groupId)
                 .maybeSingle();
 
-            groupPerms = member?.permisos ?? [];
+            groupPerms = (member?.permisos ?? []).filter(p => GROUP_SCOPED_PERMS.includes(p));
         }
 
         return ok(res, 200, 'SxUS200', {
@@ -196,7 +206,7 @@ router.put('/:id/permissions', requireAuth, requirePermission('permissions:manag
     const adminPermissions = [
         'users:manage', 'user:add', 'user:remove', 'user:deactivated', 'user:activated',
         'groups:manage', 'group:add', 'group:remove', 'permissions:manage',
-        'user:view', 'group:view'
+        'user:view', 'user:edit', 'group:view'
     ];
     
     const invalidPerms = permissions.filter(p => !adminPermissions.includes(p));

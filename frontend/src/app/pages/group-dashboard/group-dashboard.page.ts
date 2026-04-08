@@ -26,7 +26,6 @@ import { GroupsService, GroupMember } from '../../services/groups.service';
 import { PermissionsService }         from '../../services/permissions.service';
 import { DynamicPermissionsService }  from '../../services/dynamic-permissions.service';
 import { AuthGroup }                  from '../../models/auth.model';
-import { HasGroupPermissionDirective } from '../../directives/has-group-permission.directive';
 
 // ── Helpers de estado ────────────────────────────────────────────────────────
 const STATUS_ACCENT: Record<string, string> = {
@@ -113,7 +112,7 @@ export class GroupDashboardPageComponent implements OnInit {
 
   /** Verificar si puede crear tickets en el grupo */
   get canCreateTickets(): boolean {
-    return this.hasGroupPermission('ticket:add');
+    return this.hasGroupPermission('ticket:add') || this.hasGroupPermission('tickets:add');
   }
 
   /** Verificar si puede editar tickets en el grupo */
@@ -386,7 +385,7 @@ export class GroupDashboardPageComponent implements OnInit {
   }
   get canComment(): boolean {
     return this.isCreator || this.isAssignee ||
-           this.permsSvc.hasPermission('ticket:edit:comment');
+           this.permsSvc.hasAnyPermission(['ticket:edit', 'ticket:edit:comment']);
   }
   canDelete(): boolean { return this.permsSvc.hasPermission('ticket:edit:delete'); }
 
