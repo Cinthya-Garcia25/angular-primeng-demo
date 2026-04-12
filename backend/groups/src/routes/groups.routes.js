@@ -4,7 +4,6 @@ const { supabase } = require('../config/database');
 const { ok, fail } = require('../utils/respond');
 const { validate } = require('./validate');
 
-// ── JSON Schemas para validación ───────────────────────────────────────────
 const createGroupSchema = {
   type: 'object',
   required: ['name'],
@@ -40,7 +39,7 @@ const updatePermissionsSchema = {
   required: ['permissions'],
   additionalProperties: false,
   properties: {
-    permissions: { 
+    permissions: {
       type: 'array',
       items: { type: 'string' }
     }
@@ -49,7 +48,6 @@ const updatePermissionsSchema = {
 
 const router = Router();
 
-// ── Middlewares locales ──────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
     const header = req.headers.authorization ?? '';
     if (!header.startsWith('Bearer ')) {
@@ -64,10 +62,6 @@ function requireAuth(req, res, next) {
     }
 }
 
-/**
- * Verifica el permiso en tiempo real consultando la base de datos.
- * No usa los permisos embebidos en el JWT.
- */
 function requirePermission(perm) {
     const required = Array.isArray(perm) ? perm : [perm];
     return async (req, res, next) => {
@@ -88,7 +82,6 @@ function requirePermission(perm) {
 
             let perms = data.permisos_globales ?? [];
 
-            // Considerar también permisos del grupo activo
             const groupId = req.headers['x-group-id'];
             if (groupId) {
                 const { data: member } = await supabase
@@ -113,9 +106,6 @@ function requirePermission(perm) {
     };
 }
 
-// ── Rutas de grupos ──────────────────────────────────────────────────────────
-
-// GET /api/groups
 router.get('/', requireAuth, async (_req, res) => {
     const { data, error } = await supabase
         .from('grupos')
@@ -126,10 +116,9 @@ router.get('/', requireAuth, async (_req, res) => {
     return ok(res, 200, 'SxGS200', data);
 });
 
-// GET /api/groups/my-groups - Obtener solo grupos del usuario actual
 router.get('/my-groups', requireAuth, async (req, res) => {
     const userId = req.user?.userId ?? req.user?.id;
-    
+
     const { data, error } = await supabase
         .from('grupo_miembros')
         .select(`
@@ -142,8 +131,7 @@ router.get('/my-groups', requireAuth, async (req, res) => {
         .order('grupos(nombre)');
 
     if (error) return fail(res, 500, 'SxGS500', 'Error al obtener grupos del usuario');
-    
-    // Formatear respuesta para el frontend
+
     const groups = (data ?? []).map(item => ({
         id: item.grupos.id,
         nombre: item.grupos.nombre,
@@ -153,11 +141,10 @@ router.get('/my-groups', requireAuth, async (req, res) => {
         rol: item.rol,
         permisos: item.permisos || []
     }));
-    
+
     return ok(res, 200, 'SxGS200', groups);
 });
 
-// GET /api/groups/:id — IMPORTANTE: debe ir ANTES de /:id/members/me
 router.get('/:id', requireAuth, async (req, res) => {
     const { data: grupo, error } = await supabase
         .from('grupos')
@@ -167,7 +154,6 @@ router.get('/:id', requireAuth, async (req, res) => {
 
     if (error || !grupo) return fail(res, 404, 'SxGS404', 'Grupo no encontrado');
 
-    // Obtener miembros con permisos desde grupo_miembros.permisos
     const { data: miembrosData } = await supabase
         .from('grupo_miembros')
         .select('usuarios(id, username, nombre_completo, email), fecha_unido, permisos')
@@ -182,7 +168,6 @@ router.get('/:id', requireAuth, async (req, res) => {
     return ok(res, 200, 'SxGS200', [{ ...grupo, miembros }]);
 });
 
-// POST /api/groups
 router.post('/', requireAuth, requirePermission('group:add'), validate(createGroupSchema), async (req, res) => {
     const { name, description } = req.body;
 
@@ -198,7 +183,6 @@ router.post('/', requireAuth, requirePermission('group:add'), validate(createGro
     return ok(res, 201, 'SxGS201', [data]);
 });
 
-// PUT /api/groups/:id
 router.put('/:id', requireAuth, requirePermission('group:edit'), validate(updateGroupSchema), async (req, res) => {
     const { name, description } = req.body;
     const updates = {};
@@ -216,16 +200,12 @@ router.put('/:id', requireAuth, requirePermission('group:edit'), validate(update
     return ok(res, 200, 'SxGS200', [data]);
 });
 
-// DELETE /api/groups/:id
 router.delete('/:id', requireAuth, requirePermission('group:remove'), async (req, res) => {
     const { error } = await supabase.from('grupos').delete().eq('id', req.params.id);
     if (error) return fail(res, 500, 'SxGS500', 'Error al eliminar grupo');
     return ok(res, 200, 'SxGS200', null);
 });
 
-// ── Rutas de miembros ────────────────────────────────────────────────────────
-
-// GET /api/groups/:id/members/me — permisos del usuario actual en este grupo
 router.get('/:id/members/me', requireAuth, async (req, res) => {
     const { data: member, error } = await supabase
         .from('grupo_miembros')
@@ -235,14 +215,12 @@ router.get('/:id/members/me', requireAuth, async (req, res) => {
         .maybeSingle();
 
     if (error) return fail(res, 500, 'SxGS500', 'Error al obtener permisos del grupo');
-    
+
     const permissions = member?.permisos ?? [];
     return ok(res, 200, 'SxGS200', [{ permissions }]);
 });
 
-// POST /api/groups/:id/members — agregar usuario al grupo
 router.post('/:id/members', requireAuth, requirePermission('group:edit'), validate(addMemberSchema), async (req, res) => {
-    // Aceptar tanto userId (frontend) como usuario_id (schema)
     const userId = req.body.userId || req.body.usuario_id;
     if (!userId) return fail(res, 400, 'SxGS400', 'userId requerido');
 
@@ -263,7 +241,6 @@ router.post('/:id/members', requireAuth, requirePermission('group:edit'), valida
     return ok(res, 201, 'SxGS201', null);
 });
 
-// DELETE /api/groups/:id/members/:userId — quitar usuario del grupo
 router.delete('/:id/members/:userId', requireAuth, requirePermission('group:edit'), async (req, res) => {
     const { error } = await supabase
         .from('grupo_miembros')
@@ -275,7 +252,6 @@ router.delete('/:id/members/:userId', requireAuth, requirePermission('group:edit
     return ok(res, 200, 'SxGS200', null);
 });
 
-// PUT /api/groups/:id/members/:userId/permissions - actualizar permisos de grupo del usuario
 router.put('/:id/members/:userId/permissions', requireAuth, requirePermission(['group:edit', 'permissions:manage']), validate(updatePermissionsSchema), async (req, res) => {
     const { permissions } = req.body;
     if (!Array.isArray(permissions)) return fail(res, 400, 'SxGS400', 'permissions debe ser un array');
@@ -284,10 +260,8 @@ router.put('/:id/members/:userId/permissions', requireAuth, requirePermission(['
     const userId = req.params.userId;
 
     try {
-        // Configurar el contexto de auditoría
         await supabase.rpc('set_config', { key: 'app.current_user_id', value: req.user.userId });
 
-        // Actualizar permisos directamente en la tabla grupo_miembros
         const { error } = await supabase
             .from('grupo_miembros')
             .update({ permisos: permissions })
@@ -303,7 +277,6 @@ router.put('/:id/members/:userId/permissions', requireAuth, requirePermission(['
     }
 });
 
-// GET /api/groups/:id/members/:userId/permissions - obtener permisos de un usuario en el grupo
 router.get('/:id/members/:userId/permissions', requireAuth, requirePermission('group:edit'), async (req, res) => {
     const { data: member, error } = await supabase
         .from('grupo_miembros')
@@ -314,11 +287,10 @@ router.get('/:id/members/:userId/permissions', requireAuth, requirePermission('g
 
     if (error) return fail(res, 500, 'SxGS500', 'Error al obtener permisos del usuario');
     if (!member) return fail(res, 404, 'SxGS404', 'El usuario no es miembro del grupo');
-    
+
     return ok(res, 200, 'SxGS200', [{ permissions: member.permisos ?? [] }]);
 });
 
-// GET /api/groups/:id/permissions - obtener todos los permisos disponibles para asignar
 router.get('/:id/permissions', requireAuth, requirePermission('group:view'), async (_req, res) => {
     const { data, error } = await supabase
         .from('permisos')
@@ -329,7 +301,6 @@ router.get('/:id/permissions', requireAuth, requirePermission('group:view'), asy
     return ok(res, 200, 'SxGS200', data);
 });
 
-// GET /api/groups/:id/permissions/audit - obtener historial de cambios de permisos del grupo
 router.get('/:id/permissions/audit', requireAuth, requirePermission('permissions:manage'), async (req, res) => {
     const { data, error } = await supabase
         .from('permisos_auditoria')

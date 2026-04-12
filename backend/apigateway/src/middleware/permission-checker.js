@@ -1,8 +1,4 @@
-// Reglas de permiso en el API Gateway.
-// req.user.permissions ya contiene permisos frescos desde DB (actualizado en jwt-validator).
-// Cada regla puede tener un string (único) o un array (OR lógico) en el campo `permission`.
 const PERMISSION_RULES = [
-    // Users
     { method: 'POST',   test: url => url === '/api/auth/users',                          permission: 'user:add'                                  },
     { method: 'PUT',    test: url => /^\/api\/users\/[^/]+$/.test(url),                  permission: 'user:edit'                                  },
     { method: 'DELETE', test: url => /^\/api\/users\/[^/]+$/.test(url),                  permission: ['user:remove', 'user:delete']               },
@@ -12,7 +8,6 @@ const PERMISSION_RULES = [
     { method: 'GET',    test: url => url === '/api/users',                               permission: ['users:view', 'users:manage'] },
     { method: 'GET',    test: url => /^\/api\/users\/[^/]+$/.test(url),                  permission: 'user:view'                                  },
 
-    // Groups
     { method: 'POST',   test: url => url === '/api/groups',                              permission: 'group:add'                                  },
     { method: 'PUT',    test: url => /^\/api\/groups\/[^/]+$/.test(url),                 permission: 'group:edit'                                 },
     { method: 'DELETE', test: url => /^\/api\/groups\/[^/]+$/.test(url),                 permission: ['group:remove', 'group:delete']             },
@@ -20,10 +15,7 @@ const PERMISSION_RULES = [
     { method: 'DELETE', test: url => /^\/api\/groups\/[^/]+\/members\/[^/]+$/.test(url), permission: 'group:edit'                                 },
     { method: 'PUT',    test: url => /^\/api\/groups\/[^/]+\/members\/[^/]+\/permissions$/.test(url), permission: ['group:edit', 'permissions:manage'] },
     { method: 'GET',    test: url => url === '/api/groups',                              permission: 'group:view'                                 },
-    // GET /api/groups/:id no requiere permiso en el gateway: cualquier usuario autenticado
-    // puede solicitar los datos de un grupo específico. El servicio de grupos valida la membresía.
 
-    // Tickets
     { method: 'POST',   test: url => url === '/api/tickets',                             permission: 'ticket:add'                                 },
     { method: 'PUT',    test: url => /^\/api\/tickets\/[^/]+$/.test(url),                permission: 'ticket:edit'                                },
     { method: 'PATCH',  test: url => /^\/api\/tickets\/[^/]+\/status$/.test(url),        permission: ['ticket:edit:state', 'ticket:edit_state']   },
@@ -44,7 +36,7 @@ function hasRequiredPermission(userPerms, required) {
 }
 
 async function permissionChecker(req, reply) {
-    if (!req.user) return; // ya rechazado por jwt-validator
+    if (!req.user) return;
 
     const rule = PERMISSION_RULES.find(
         r => r.method === req.method && r.test(req.url)

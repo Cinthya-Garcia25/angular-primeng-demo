@@ -23,9 +23,6 @@ import { UsersService, User } from '../../services/users.service';
 import { DynamicPermissionsService } from '../../services/dynamic-permissions.service';
 import { PermissionsService } from '../../services/permissions.service';
 
-// Permisos asignables por grupo: solo acciones dentro del workspace.
-// Los permisos de administración global (groups:manage, users:manage, group:add, etc.)
-// se asignan a nivel de usuario, no por grupo.
 const ALL_PERMISSIONS: { label: string; value: string; group: string }[] = [
   { label: 'Ver grupo',              value: 'group:view',          group: 'Grupos'  },
   { label: 'Ver tickets',            value: 'ticket:view',         group: 'Tickets' },
@@ -75,12 +72,10 @@ export class AdminGroupComponent implements OnInit {
     return this.permsSvc.hasAnyPermission(['groups:manage', 'group:edit', 'group:add']);
   }
 
-  // ── Lista de grupos ──────────────────────────────────────────────────────
   groups: Group[]  = [];
   loading          = false;
   searchValue      = '';
 
-  // ── Dialog crear / editar grupo ──────────────────────────────────────────
   groupDialogVisible       = false;
   deleteGroupDialogVisible = false;
   isEditingGroup           = false;
@@ -92,13 +87,11 @@ export class AdminGroupComponent implements OnInit {
     description: [''],
   });
 
-  // ── Dialog miembros ──────────────────────────────────────────────────────
   membersDialogVisible = false;
   selectedGroup: Group | null = null;
   members: GroupMember[] = [];
   loadingMembers = false;
 
-  // ── Dialog agregar miembro ───────────────────────────────────────────────
   addMemberDialogVisible = false;
   allUsers: User[]       = [];
   loadingUsers           = false;
@@ -111,7 +104,6 @@ export class AdminGroupComponent implements OnInit {
       .map(u => ({ label: `${u.username} (${u.email})`, value: u.id }));
   }
 
-  // ── Dialog permisos por grupo ────────────────────────────────────────────
   permsDialogVisible = false;
   editingMember: GroupMember | null = null;
   selectedPerms: string[] = [];
@@ -132,14 +124,12 @@ export class AdminGroupComponent implements OnInit {
     );
   }
 
-  // ── Lifecycle ────────────────────────────────────────────────────────────
   ngOnInit(): void {
     this.dynPermsSvc.isReady().subscribe(() => {
         this.loadGroups();
     });
   }
 
-  // ── CRUD grupos ──────────────────────────────────────────────────────────
   loadGroups(): void {
     this.loading = true;
     this.groupsSvc.getAllGroups().subscribe({
@@ -204,7 +194,6 @@ export class AdminGroupComponent implements OnInit {
     });
   }
 
-  // ── Gestión de miembros ──────────────────────────────────────────────────
   openMembersDialog(group: Group): void {
     this.selectedGroup = group;
     this.membersDialogVisible = true;
@@ -232,15 +221,14 @@ export class AdminGroupComponent implements OnInit {
     this.selectedUserId = '';
     this.loadingUsers   = true;
     this.addMemberDialogVisible = true;
-    
-    // Cargar usuarios inmediatamente
+
     this.usersSvc.getAll().subscribe({
       next: (res: any) => {
         this.allUsers = Array.isArray(res) ? res : (res?.data ?? []);
         this.loadingUsers = false;
         this.cdr.detectChanges();
       },
-      error: () => { 
+      error: () => {
         this.allUsers = [];
         this.loadingUsers = false;
         this.cdr.detectChanges();
@@ -271,7 +259,6 @@ export class AdminGroupComponent implements OnInit {
     });
   }
 
-  // ── Permisos por grupo ───────────────────────────────────────────────────
   openPermsDialog(member: GroupMember): void {
     this.editingMember  = member;
     this.selectedPerms  = [...(member.permisos ?? [])];
@@ -298,12 +285,11 @@ export class AdminGroupComponent implements OnInit {
           this.editingMember!.permisos = permissionsToSave;
           this.permsDialogVisible = false;
           this.savingPerms = false;
-          
-          // Actualizar caché de permisos por grupo si es el usuario actual
+
           if (this.selectedGroup) {
             this.groupsSvc.updateGroupPermissionsCache(this.selectedGroup.id, permissionsToSave);
           }
-          
+
           this.cdr.detectChanges();
         },
         error: () => {
@@ -314,7 +300,6 @@ export class AdminGroupComponent implements OnInit {
       });
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
   initial(name: string): string { return (name ?? '?').charAt(0).toUpperCase(); }
 
   formatDate(iso: string): string {

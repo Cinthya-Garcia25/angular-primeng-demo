@@ -9,18 +9,14 @@ const { logError }      = require('./src/utils/logger');
 const app  = express();
 const PORT = process.env.GROUPS_PORT ?? 3003;
 
-// ── Middlewares ────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 
-// ── Rutas ──────────────────────────────────────────────
 app.use('/api/groups',      groupsRoutes);
 app.use('/api/permissions', permissionsRoutes);
 
-// ── Health ─────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'groups' }));
 
-// ── Error handler global ───────────────────────────────
 app.use((err, req, res, _next) => {
   logError({
     servicio:    'groups',

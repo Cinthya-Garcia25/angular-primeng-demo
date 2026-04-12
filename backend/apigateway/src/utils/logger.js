@@ -5,10 +5,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-/**
- * Registra un request HTTP en la tabla logs.
- * Fire-and-forget: nunca lanza errores hacia el caller.
- */
 function logRequest({ servicio, metodo, endpoint, usuario_id, ip, status_http, duracion_ms }) {
   supabase.from('logs').insert({
     tipo: 'request',
@@ -22,10 +18,6 @@ function logRequest({ servicio, metodo, endpoint, usuario_id, ip, status_http, d
   }).then(() => {}).catch(() => {});
 }
 
-/**
- * Registra un error interno en la tabla logs.
- * Fire-and-forget: nunca lanza errores hacia el caller.
- */
 function logError({ servicio, metodo, endpoint, usuario_id, ip, mensaje, stack_trace }) {
   supabase.from('logs').insert({
     tipo: 'error',

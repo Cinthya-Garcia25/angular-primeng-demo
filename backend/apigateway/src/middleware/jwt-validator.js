@@ -1,19 +1,12 @@
 const jwt = require('jsonwebtoken');
 
-// Rutas públicas que NO requieren token
 const PUBLIC_PATHS = ['/api/auth/login', '/api/auth/register', '/health'];
 
-// URL interna del servicio de usuarios (sin pasar por el propio gateway)
 const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL ?? 'http://localhost:3001';
 
-/**
- * Consulta los permisos actuales del usuario directamente en la base de datos
- * a través del Users Service. Nunca usa los permisos embebidos en el JWT.
- */
 async function fetchFreshPermissions(authHeader, groupId) {
-    // node-fetch v3 requiere importación dinámica (ESM)
     const { default: fetch } = await import('node-fetch');
-    
+
     const headers = { Authorization: authHeader };
     if (groupId) headers['x-group-id'] = groupId;
 
@@ -21,7 +14,6 @@ async function fetchFreshPermissions(authHeader, groupId) {
     if (!res.ok) return null;
 
     const body = await res.json();
-    // data es { permissions: [], groupPermissions: [] } (no array)
     const perms      = body?.data?.permissions      ?? [];
     const groupPerms = body?.data?.groupPermissions ?? [];
     return [...new Set([...perms, ...groupPerms])];
@@ -48,7 +40,6 @@ async function jwtValidator(req, reply) {
         });
     }
 
-    // Obtener permisos frescos desde la base de datos (no del JWT)
     const groupId = req.headers['x-group-id'];
     try {
         const freshPerms = await fetchFreshPermissions(authHeader, groupId);

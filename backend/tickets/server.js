@@ -6,16 +6,12 @@ const { logError }  = require('./src/utils/logger');
 const app  = Fastify({ logger: true });
 const PORT = process.env.TICKETS_PORT ?? 3002;
 
-// ── Plugins ─────────────────────────────────────────────
 app.register(require('@fastify/cors'));
 
-// ── Rutas ────────────────────────────────────────────────
 app.register(ticketsRoutes, { prefix: '/api/tickets' });
 
-// ── Health ───────────────────────────────────────────────
 app.get('/api/health', async () => ({ status: 'ok', service: 'tickets' }));
 
-// ── Error handler global ─────────────────────────────────
 app.setErrorHandler((err, req, reply) => {
   logError({
     servicio:    'tickets',

@@ -1,4 +1,3 @@
-// Helper para respuestas con esquema global uniforme (Express)
 function ok(res, statusCode, intOpCode, data) {
     return res.status(statusCode).json({ statusCode, intOpCode, data });
 }

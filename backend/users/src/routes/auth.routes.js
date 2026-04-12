@@ -9,7 +9,6 @@ const { validate }   = require('./validate');
 
 const router = Router();
 
-// POST /api/auth/login  — público
 router.post('/login', validate(loginSchema), async (req, res) => {
     const { username, password } = req.body;
 
@@ -34,13 +33,11 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 
     const groups = (miembros ?? []).map(m => ({ id: m.grupos.id, name: m.grupos.nombre }));
 
-    // Obtener permisos por grupo del usuario
     const { data: userGroupPerms } = await supabase
         .from('grupo_usuario_permisos')
         .select('grupo_id, permisos(codigo)')
         .eq('usuario_id', user.id);
 
-    // Construir objeto de permisos por grupo: { grupoId: [perm1, perm2, ...] }
     const permissionsByGroup = {};
     (userGroupPerms ?? []).forEach(row => {
         const groupId = row.grupo_id;
@@ -54,10 +51,10 @@ router.post('/login', validate(loginSchema), async (req, res) => {
     });
 
     const token = signToken({
-        userId:      user.id,
-        username:    user.username,
-        permissions: user.permisos_globales ?? [],      // Permisos administrativos globales
-        groupPermissions: permissionsByGroup             // Permisos funcionales por grupo
+        userId:           user.id,
+        username:         user.username,
+        permissions:      user.permisos_globales ?? [],
+        groupPermissions: permissionsByGroup
     });
 
     return ok(res, 200, 'SxAS200', [{
@@ -69,13 +66,12 @@ router.post('/login', validate(loginSchema), async (req, res) => {
             email:       user.email,
             telefono:    user.telefono,
             direccion:   user.direccion,
-            permissions: user.permisos_globales ?? [],      // Permisos administrativos globales
+            permissions: user.permisos_globales ?? [],
             groups
         }
     }]);
 });
 
-// POST /api/auth/register  — público
 router.post('/register', validate(registerSchema), async (req, res) => {
     const { username, password, email, nombre_completo, telefono, direccion } = req.body;
 
@@ -92,14 +88,14 @@ router.post('/register', validate(registerSchema), async (req, res) => {
     const { data: newUser, error } = await supabase
         .from('usuarios')
         .insert({
-            username:         username.trim().toLowerCase(),
-            email:            email.trim().toLowerCase(),
+            username:          username.trim().toLowerCase(),
+            email:             email.trim().toLowerCase(),
             password_hash,
-            nombre_completo:  nombre_completo ?? null,
-            telefono:         telefono ?? null,
-            direccion:        direccion ?? null,
-            permisos_globales: [], // Sin permisos por defecto — el admin los asigna por grupo
-            is_active: true
+            nombre_completo:   nombre_completo ?? null,
+            telefono:          telefono ?? null,
+            direccion:         direccion ?? null,
+            permisos_globales: [],
+            is_active:         true
         })
         .select('id, username, email')
         .single();
@@ -109,7 +105,6 @@ router.post('/register', validate(registerSchema), async (req, res) => {
     return ok(res, 201, 'SxAS201', [newUser]);
 });
 
-// POST /api/auth/users  — requiere user:add
 router.post('/users',
     requireAuth,
     requirePermission('user:add'),
@@ -134,7 +129,7 @@ router.post('/users',
                 email:             email.trim().toLowerCase(),
                 password_hash,
                 nombre_completo:   nombre_completo ?? null,
-                permisos_globales: permissions ?? [], // Sin permisos por defecto — el admin los asigna por grupo
+                permisos_globales: permissions ?? [],
                 is_active:         true
             })
             .select('id, username, email')

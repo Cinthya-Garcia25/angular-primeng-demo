@@ -16,7 +16,6 @@ function requireAuth(req, res, next) {
     }
 }
 
-// GET /api/permissions — lista todos los permisos registrados en la tabla permisos
 router.get('/', requireAuth, async (_req, res) => {
     const { data, error } = await supabase
         .from('permisos')

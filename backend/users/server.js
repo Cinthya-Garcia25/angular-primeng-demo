@@ -9,18 +9,14 @@ const { logError } = require('./src/utils/logger');
 const app  = express();
 const PORT = process.env.USERS_PORT ?? 3001;
 
-// ── Middlewares ────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 
-// ── Rutas ──────────────────────────────────────────────
 app.use('/api/auth',  authRoutes);
 app.use('/api/users', usersRoutes);
 
-// ── Health ─────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'users' }));
 
-// ── Error handler global ───────────────────────────────
 app.use((err, req, res, _next) => {
   logError({
     servicio:    'users',

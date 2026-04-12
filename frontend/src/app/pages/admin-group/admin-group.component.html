@@ -1,6 +1,5 @@
 <p-toast />
 
-<!-- ═══════════════════ TOOLBAR ═══════════════════ -->
 <div class="ag-page">
   <div class="ag-header">
     <div>
@@ -12,7 +11,6 @@
     }
   </div>
 
-  <!-- ═══════════════════ TABLA DE GRUPOS ═══════════════════ -->
   <p-card styleClass="ag-card">
     <div class="ag-search-row">
       <p-iconfield>
@@ -69,7 +67,6 @@
 </div>
 
 
-<!-- ═══════════════════ DIALOG: CREAR / EDITAR GRUPO ═══════════════════ -->
 <p-dialog [header]="isEditingGroup ? 'Editar Grupo' : 'Nuevo Grupo'"
           [(visible)]="groupDialogVisible" [modal]="true"
           [style]="{ width: '34rem', maxWidth: '95vw' }"
@@ -99,7 +96,6 @@
 </p-dialog>
 
 
-<!-- ═══════════════════ DIALOG: CONFIRMAR ELIMINAR GRUPO ═══════════════════ -->
 <p-dialog header="Confirmar eliminación" [(visible)]="deleteGroupDialogVisible"
           [modal]="true" [style]="{ width: '28rem' }"
           [draggable]="false" [resizable]="false" appendTo="body">
@@ -117,7 +113,6 @@
 </p-dialog>
 
 
-<!-- ═══════════════════ DIALOG: GESTIONAR MIEMBROS ═══════════════════ -->
 <p-dialog [header]="'Miembros — ' + (selectedGroup?.nombre ?? '')"
           [(visible)]="membersDialogVisible" [modal]="true"
           [style]="{ width: '62rem', maxWidth: '96vw' }"
@@ -191,7 +186,6 @@
 </p-dialog>
 
 
-<!-- ═══════════════════ DIALOG: AGREGAR MIEMBRO ═══════════════════ -->
 <p-dialog header="Agregar miembro al grupo" [(visible)]="addMemberDialogVisible"
           [modal]="true" [style]="{ width: '36rem', maxWidth: '95vw' }"
           [draggable]="false" [resizable]="false" appendTo="body">
@@ -213,7 +207,6 @@
 </p-dialog>
 
 
-<!-- ═══════════════════ DIALOG: PERMISOS POR GRUPO ═══════════════════ -->
 <p-dialog [header]="'Permisos de grupo — ' + (editingMember?.usuarios?.username ?? '')"
           [(visible)]="permsDialogVisible" [modal]="true"
           [style]="{ width: '44rem', maxWidth: '96vw' }"

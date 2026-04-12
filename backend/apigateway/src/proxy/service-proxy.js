@@ -12,8 +12,6 @@ async function serviceProxy(req, reply, routesMap) {
     }
 
     const targetUrl = `${routesMap[prefix]}${req.url}`;
-    // Eliminamos host y content-length: el body re-serializado puede tener
-    // distinto tamaño y un content-length incorrecto rompe el body parser de Express
     const { host, 'content-length': _cl, ...headers } = req.headers;
     headers['content-type'] = 'application/json';
 

@@ -1,4 +1,3 @@
-// Mapa de prefijos de ruta → URL del microservicio destino
 const ROUTES_MAP = {
   '/api/auth':    process.env.USERS_SERVICE_URL    ?? 'http://localhost:3001',
   '/api/users':   process.env.USERS_SERVICE_URL    ?? 'http://localhost:3001',

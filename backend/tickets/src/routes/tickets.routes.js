@@ -2,7 +2,6 @@ const { supabase }  = require('../config/database');
 const jwt           = require('jsonwebtoken');
 const { ok, fail }  = require('../utils/respond');
 
-// ── JSON Schemas para validación ───────────────────────────────────────────
 const createTicketSchema = {
   type: 'object',
   required: ['grupo_id', 'titulo'],
@@ -55,11 +54,6 @@ function verifyToken(req) {
     }
 }
 
-/**
- * Consulta los permisos efectivos del usuario directamente en la base de datos.
- * Combina permisos globales + permisos del grupo activo (header x-group-id).
- * Retorna un array vacío si el usuario no existe o está desactivado.
- */
 async function fetchPerms(userId, groupId) {
     const { data, error } = await supabase
         .from('usuarios')
@@ -83,7 +77,6 @@ async function fetchPerms(userId, groupId) {
         groupPerms = permsData?.permisos ?? [];
     }
 
-    // Combinar permisos administrativos globales + permisos funcionales del grupo
     return [...new Set([...globalPerms, ...groupPerms])];
 }
 
@@ -100,23 +93,19 @@ const TICKET_SELECT = `
 
 async function ticketsRoutes(fastify) {
 
-    // ── Auth + permisos frescos desde DB en todas las rutas ─────────────────
     fastify.addHook('preHandler', async (req, reply) => {
         req.user = verifyToken(req);
         if (!req.user) return fail(reply, 401, 'SxTS401', 'Token requerido');
 
-        // Cargar permisos actuales desde DB (no desde el JWT)
         const groupId = req.headers['x-group-id'];
         req.user.permissions = await fetchPerms(req.user.userId, groupId);
-        
-        // Debug logging
+
         console.log(`[DEBUG] User: ${req.user.userId}, Group: ${groupId}, Perms: ${JSON.stringify(req.user.permissions)}`);
     });
 
-    // GET /api/tickets?grupo_id=xxx
     fastify.get('/', async (req, reply) => {
         console.log(`[DEBUG] GET /api/tickets - User perms: ${JSON.stringify(req.user.permissions)}`);
-        
+
         if (!req.user.permissions.includes('tickets:view') &&
             !req.user.permissions.includes('ticket:view')) {
             console.log(`[DEBUG] Permission denied - no ticket:view or tickets:view`);
@@ -133,7 +122,6 @@ async function ticketsRoutes(fastify) {
         return ok(reply, 200, 'SxTS200', data);
     });
 
-    // GET /api/tickets/:id
     fastify.get('/:id', async (req, reply) => {
         if (!req.user.permissions.includes('tickets:view') &&
             !req.user.permissions.includes('ticket:view')) {
@@ -147,7 +135,6 @@ async function ticketsRoutes(fastify) {
         return ok(reply, 200, 'SxTS200', [data]);
     });
 
-    // POST /api/tickets  — requiere ticket:add
     fastify.post('/', { schema: { body: createTicketSchema } }, async (req, reply) => {
         if (!req.user.permissions.includes('ticket:add')) {
             return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:add');
@@ -156,7 +143,6 @@ async function ticketsRoutes(fastify) {
         const { grupo_id, titulo, descripcion, estado_id, estado_codigo,
                 prioridad_id, prioridad_codigo, asignado_id, fecha_final } = req.body;
 
-        // Resolver estado: acepta UUID directo o codigo (ej. 'pendiente')
         let resolvedEstadoId = estado_id;
         if (!resolvedEstadoId && estado_codigo) {
             const { data: estado } = await supabase.from('estados').select('id').eq('codigo', estado_codigo).single();
@@ -164,7 +150,6 @@ async function ticketsRoutes(fastify) {
             resolvedEstadoId = estado.id;
         }
 
-        // Resolver prioridad: acepta UUID directo o codigo (ej. 'alta')
         let resolvedPrioridadId = prioridad_id;
         if (!resolvedPrioridadId && prioridad_codigo) {
             const { data: prioridad } = await supabase.from('prioridades').select('id').eq('codigo', prioridad_codigo).single();
@@ -194,7 +179,6 @@ async function ticketsRoutes(fastify) {
         return ok(reply, 201, 'SxTS201', [ticket]);
     });
 
-    // PUT /api/tickets/:id  — requiere ticket:edit
     fastify.put('/:id', { schema: { body: updateTicketSchema } }, async (req, reply) => {
         if (!req.user.permissions.includes('ticket:edit')) {
             return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:edit');
@@ -205,13 +189,11 @@ async function ticketsRoutes(fastify) {
 
         const body = { ...req.body };
 
-        // Resolver estado_codigo → estado_id si viene como codigo
         if (body.estado_codigo && !body.estado_id) {
             const { data: estado } = await supabase.from('estados').select('id').eq('codigo', body.estado_codigo).single();
             if (estado) body.estado_id = estado.id;
             delete body.estado_codigo;
         }
-        // Resolver prioridad_codigo → prioridad_id si viene como codigo
         if (body.prioridad_codigo && !body.prioridad_id) {
             const { data: prioridad } = await supabase.from('prioridades').select('id').eq('codigo', body.prioridad_codigo).single();
             if (prioridad) body.prioridad_id = prioridad.id;
@@ -235,10 +217,6 @@ async function ticketsRoutes(fastify) {
         return ok(reply, 200, 'SxTS200', [data]);
     });
 
-    // PATCH /api/tickets/:id/status
-    // Acepta { estado_id } (UUID) o { estado_codigo } (ej. 'pendiente')
-    // ticket:edit_state permite mover el estado; admin (permissions:manage) puede mover cualquier ticket,
-    // usuario normal solo puede mover tickets asignados a él.
     fastify.patch('/:id/status', async (req, reply) => {
         const perms        = req.user.permissions;
         const canEditState = perms.includes('ticket:edit_state') || perms.includes('ticket:edit:state');
@@ -260,7 +238,6 @@ async function ticketsRoutes(fastify) {
             return fail(reply, 403, 'SxTS403', 'Solo puedes mover el estado de tickets asignados a ti');
         }
 
-        // Buscar estado por UUID o por código
         let estadoQuery = supabase.from('estados').select('id, codigo');
         if (estado_id) estadoQuery = estadoQuery.eq('id', estado_id);
         else           estadoQuery = estadoQuery.eq('codigo', estado_codigo);
@@ -282,7 +259,6 @@ async function ticketsRoutes(fastify) {
         return ok(reply, 200, 'SxTS200', [data]);
     });
 
-    // POST /api/tickets/:id/comments  — requiere ticket:edit:comment
     fastify.post('/:id/comments', { schema: { body: addCommentSchema } }, async (req, reply) => {
         if (!req.user.permissions.includes('ticket:edit') && !req.user.permissions.includes('ticket:edit:comment')) {
             return fail(reply, 403, 'SxCS403', 'Permiso requerido: ticket:edit');
@@ -302,7 +278,6 @@ async function ticketsRoutes(fastify) {
         return ok(reply, 201, 'SxCS201', [data]);
     });
 
-    // PATCH /api/tickets/:id/priority  — requiere ticket:edit:priority
     fastify.patch('/:id/priority', async (req, reply) => {
         if (!req.user.permissions.includes('ticket:edit:priority')) {
             return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:edit:priority');
@@ -313,7 +288,6 @@ async function ticketsRoutes(fastify) {
             return fail(reply, 400, 'SxTS400', 'prioridad_id o prioridad_codigo es requerido');
         }
 
-        // Resolver prioridad por UUID o por código
         let prioridadQuery = supabase.from('prioridades').select('id, codigo');
         if (prioridad_id) prioridadQuery = prioridadQuery.eq('id', prioridad_id);
         else           prioridadQuery = prioridadQuery.eq('codigo', prioridad_codigo);
@@ -335,7 +309,6 @@ async function ticketsRoutes(fastify) {
         return ok(reply, 200, 'SxTS200', [data]);
     });
 
-    // PATCH /api/tickets/:id/deadline  — requiere ticket:edit:deadline
     fastify.patch('/:id/deadline', async (req, reply) => {
         if (!req.user.permissions.includes('ticket:edit:deadline')) {
             return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:edit:deadline');
@@ -360,7 +333,6 @@ async function ticketsRoutes(fastify) {
         return ok(reply, 200, 'SxTS200', [data]);
     });
 
-    // PATCH /api/tickets/:id/assign  — requiere ticket:edit:assign
     fastify.patch('/:id/assign', async (req, reply) => {
         if (!req.user.permissions.includes('ticket:edit:assign')) {
             return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:edit:assign');
@@ -385,7 +357,6 @@ async function ticketsRoutes(fastify) {
         return ok(reply, 200, 'SxTS200', [data]);
     });
 
-    // DELETE /api/tickets/:id  — requiere ticket:delete
     fastify.delete('/:id', async (req, reply) => {
         if (!req.user.permissions.includes('ticket:delete')) {
             return fail(reply, 403, 'SxTS403', 'Permiso requerido: ticket:delete');

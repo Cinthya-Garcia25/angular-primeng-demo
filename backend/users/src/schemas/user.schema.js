@@ -1,4 +1,3 @@
-// Migrado desde backend/src/schemas/auth.schema.ts y user.schema.ts
 const loginSchema = {
   type: 'object',
   required: ['username', 'password'],

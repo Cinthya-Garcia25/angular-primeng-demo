@@ -10,15 +10,12 @@ const { logRequest, logError } = require('./src/utils/logger');
 const app = Fastify({ logger: true });
 const PORT = process.env.GATEWAY_PORT ?? 3000;
 
-// ── Plugins ─────────────────────────────────────────────
-app.register(require('@fastify/cors'), { origin: 'http://localhost:4200' });
+app.register(require('@fastify/cors'), { origin: '*' });
 app.register(require('@fastify/rate-limit'), rateLimiter);
 
-// ── Auth hook (todas las rutas excepto /api/auth) ───────
 app.addHook('preHandler', jwtValidator);
 app.addHook('preHandler', permissionChecker);
 
-// ── Log de cada request (fire-and-forget, no bloquea) ───
 app.addHook('onResponse', (req, reply, done) => {
   if (req.url !== '/health') {
     logRequest({
@@ -34,7 +31,6 @@ app.addHook('onResponse', (req, reply, done) => {
   done();
 });
 
-// ── Log de errores no capturados ─────────────────────────
 app.addHook('onError', (req, _reply, error, done) => {
   logError({
     servicio:    'apigateway',
@@ -48,12 +44,10 @@ app.addHook('onError', (req, _reply, error, done) => {
   done();
 });
 
-// ── Proxy dinámico ───────────────────────────────────────
 app.all('/api/*', async (req, reply) => {
   return serviceProxy(req, reply, ROUTES_MAP);
 });
 
-// ── Health check ─────────────────────────────────────────
 app.get('/health', async (_req, reply) => {
   return reply.code(200).send({ statusCode: 200, intOpCode: 'SxGW200', data: [{ status: 'ok', service: 'apigateway' }] });
 });

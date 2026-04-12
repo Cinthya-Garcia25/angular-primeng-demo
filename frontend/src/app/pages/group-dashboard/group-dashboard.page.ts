@@ -2,7 +2,7 @@ import { CommonModule }        from '@angular/common';
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
-// PrimeNG
+
 import { AvatarModule }       from 'primeng/avatar';
 import { ButtonModule }       from 'primeng/button';
 import { CardModule }         from 'primeng/card';
@@ -27,7 +27,7 @@ import { PermissionsService }         from '../../services/permissions.service';
 import { DynamicPermissionsService }  from '../../services/dynamic-permissions.service';
 import { AuthGroup }                  from '../../models/auth.model';
 
-// ── Helpers de estado ────────────────────────────────────────────────────────
+
 const STATUS_ACCENT: Record<string, string> = {
   pendiente:   '#3b82f6',
   en_progreso: '#f59e0b',
@@ -80,7 +80,7 @@ export class GroupDashboardPageComponent implements OnInit {
   private readonly dynamicPermsSvc = inject(DynamicPermissionsService);
   private readonly fb         = inject(FormBuilder);
 
-  // ── Grupos del usuario ───────────────────────────────────────────────────
+
   readonly groups: AuthGroup[] = JSON.parse(sessionStorage.getItem('authGroups') || '[]');
   selectedGroup: AuthGroup | null = null;
   loadingGroupPerms = false;
@@ -92,57 +92,54 @@ export class GroupDashboardPageComponent implements OnInit {
     return this.selectedGroup === null;
   }
 
-  // ── Helpers de permisos por grupo ─────────────────────────────────────────────
-  
-  /** Verificar si el usuario tiene un permiso específico en el grupo actual */
+
   hasGroupPermission(permission: string): boolean {
     if (!this.selectedGroup) return false;
     return this.groupsSvc.hasGroupPermission(this.selectedGroup.id, permission);
   }
 
-  /** Verificar si puede ver tickets del grupo */
+
   get canViewTickets(): boolean {
-    // Los administradores con permissions:manage pueden ver todos los tickets
+  
     if (this.permsSvc.hasPermission('permissions:manage')) {
       return true;
     }
-    // Usuarios normales necesitan permiso de grupo
+
     return this.hasGroupPermission('ticket:view');
   }
 
-  /** Verificar si puede crear tickets en el grupo */
+ 
   get canCreateTickets(): boolean {
     return this.hasGroupPermission('ticket:add') || this.hasGroupPermission('tickets:add');
   }
 
-  /** Verificar si puede editar tickets en el grupo */
+
   get canEditTickets(): boolean {
     return this.hasGroupPermission('ticket:edit');
   }
 
-  /** Verificar si puede cambiar estado de tickets en el grupo */
+
   get canChangeTicketStatus(): boolean {
     if (this.permsSvc.hasPermission('permissions:manage')) {
       return true;
     }
-    // El permiso puede estar guardado con ':' o '_' según la versión
+ 
     return this.permsSvc.hasAnyPermission(['ticket:edit:state', 'ticket:edit_state']) ||
            this.hasGroupPermission('ticket:edit:state') ||
            this.hasGroupPermission('ticket:edit_state');
   }
 
-  /** Verificar si puede eliminar tickets en el grupo */
+
   get canDeleteTickets(): boolean {
     return this.hasGroupPermission('ticket:edit:delete');
   }
 
-  // ── Estado ───────────────────────────────────────────────────────────────
   tickets      = signal<Ticket[]>([]);
   loading      = signal(false);
   errorMsg     = signal<string | null>(null);
   isKanbanView = true;
 
-  // ── Filtros de tabla ────────────────────────────────────────────────────
+
   statusFilter: string | null = null;
   priorityFilter: string | null = null;
   assigneeFilter: string | null = null;
@@ -170,7 +167,7 @@ export class GroupDashboardPageComponent implements OnInit {
     ];
   }
 
-  // ── Tickets filtrados para la tabla ───────────────────────────────────────
+
   get filteredTickets(): Ticket[] {
     let tickets = this.visibleTickets();
     
@@ -194,7 +191,7 @@ export class GroupDashboardPageComponent implements OnInit {
   }
 
   applyFilters(): void {
-    // Los filtros se aplican automáticamente via el getter filteredTickets
+
   }
 
   clearFilters(): void {
@@ -203,7 +200,7 @@ export class GroupDashboardPageComponent implements OnInit {
     this.assigneeFilter = null;
   }
 
-  // ── Columnas Kanban ──────────────────────────────────────────────────────
+
   readonly columns = [
     { codigo: 'pendiente',   label: 'Pendiente'   },
     { codigo: 'en_progreso', label: 'En progreso' },
@@ -226,7 +223,7 @@ export class GroupDashboardPageComponent implements OnInit {
     { label: 'Baja',  value: 'baja'  }
   ];
 
-  // ── KPIs ─────────────────────────────────────────────────────────────────
+
   readonly totalTickets = computed(() => this.visibleTickets().length);
 
   countByStatus(codigo: string): number {
@@ -237,16 +234,16 @@ export class GroupDashboardPageComponent implements OnInit {
     return this.visibleTickets().filter(t => t.estados?.codigo === codigo);
   }
 
-  // ── Tickets visibles según permisos ───────────────────────────────────────
+
   readonly visibleTickets = computed(() => {
     const allTickets = this.tickets();
     
-    // Si tiene permisos avanzados, ve todos los tickets
+ 
     if (this.canViewAllTickets()) {
       return allTickets;
     }
     
-    // Usuario normal: solo ve sus tickets asignados
+
     const me = this.currentUser.toLowerCase();
     const filtered = allTickets.filter(t => {
       const asignado = (t.asignado?.username ?? '').toLowerCase();
@@ -272,7 +269,7 @@ export class GroupDashboardPageComponent implements OnInit {
     return this.visibleTickets().slice(0, 5);
   }
 
-  // ── Member options para el select de asignado (miembros del grupo) ─────────
+  
   get memberOptionsWithEmpty(): { label: string; value: string }[] {
     return [
       { label: 'Sin asignar', value: '' },
@@ -282,24 +279,19 @@ export class GroupDashboardPageComponent implements OnInit {
     ];
   }
 
-  // ── Permisos — computed() para que visibleTickets sea reactivo ───────────
-
-  /** true si el usuario puede crear tickets */
+ 
   readonly canCreateTicket = computed(() =>
     this.permsSvc.hasPermission('ticket:add')
   );
 
-  /**
-   * true si el usuario tiene permisos de admin.
-   * Controla si ve TODOS los tickets del grupo o solo los asignados.
-   */
+
   readonly canViewAllTickets = computed(() =>
     this.permsSvc.hasAnyPermission([
       'group:edit', 'group:remove', 'users:view', 'permissions:manage'
     ])
   );
 
-  // ── Modal crear ticket ───────────────────────────────────────────────────
+
   createDialogVisible = false;
 
   readonly createForm = this.fb.group({
@@ -355,7 +347,7 @@ export class GroupDashboardPageComponent implements OnInit {
     return ctrl?.invalid && (ctrl.dirty || ctrl.touched) || false;
   }
 
-  // ── Modal: estado ────────────────────────────────────────────────────────
+
   detailDialogVisible = false;
   selectedTicket: Ticket | null = null;
   dialogMode: 'view' | 'edit' = 'view';
@@ -372,7 +364,6 @@ export class GroupDashboardPageComponent implements OnInit {
     dueDate:     ['']
   });
 
-  // ── Permisos sobre el ticket seleccionado ────────────────────────────────
   get isCreator():  boolean { return this.selectedTicket?.autor.username === this.currentUser; }
   get isAssignee(): boolean { return this.selectedTicket?.asignado?.username === this.currentUser; }
 
@@ -389,14 +380,14 @@ export class GroupDashboardPageComponent implements OnInit {
   }
   canDelete(): boolean { return this.permsSvc.hasPermission('ticket:edit:delete'); }
 
-  // ── Permiso para mover un ticket específico (drag & drop) ─────────────
+ 
   canMoveTicket(ticket: Ticket): boolean {
     const isAssignee = ticket.asignado?.username === this.currentUser;
-    const hasPermission = this.canChangeTicketStatus; // Usar permiso por grupo
+    const hasPermission = this.canChangeTicketStatus; 
     return isAssignee || hasPermission;
   }
 
-  // ── Chart: dona por estado ────────────────────────────────────────────────
+
   get statusChartData() {
     const labels = this.columns.map(c => c.label);
     const data   = this.columns.map(c => this.countByStatus(c.codigo));
@@ -414,7 +405,7 @@ export class GroupDashboardPageComponent implements OnInit {
     cutout: '65%'
   };
 
-  // ── Chart: barras por prioridad ───────────────────────────────────────────
+ 
   get priorityChartData() {
     const prioridades = ['alta', 'media', 'baja'];
     const data        = prioridades.map(p =>
@@ -441,7 +432,7 @@ export class GroupDashboardPageComponent implements OnInit {
     }
   };
 
-  // ── Ciclo de vida ────────────────────────────────────────────────────────
+
   ngOnInit(): void {
     if (!this.groups.length) return;
 
@@ -453,21 +444,20 @@ export class GroupDashboardPageComponent implements OnInit {
     }
   }
 
-  // ── Selección de grupo desde el picker ───────────────────────────────────
+ 
   selectGroupFromPicker(group: AuthGroup): void {
     sessionStorage.setItem('selectedGroupId',   group.id);
     sessionStorage.setItem('selectedGroupName', group.name);
     this.activateGroup(group);
   }
 
-  // ── Cambio de grupo desde el select del header ───────────────────────────
   onGroupChange(group: AuthGroup): void {
     sessionStorage.setItem('selectedGroupId',   group.id);
     sessionStorage.setItem('selectedGroupName', group.name);
     this.activateGroup(group);
   }
 
-  // ── Activar grupo: cargar permisos primero, luego tickets ────────────────
+ 
   private activateGroup(group: AuthGroup): void {
     this.loadingGroupPerms = true;
     this.selectedGroup = group;
@@ -475,7 +465,7 @@ export class GroupDashboardPageComponent implements OnInit {
     this.errorMsg.set(null);
     this.loadGroupMembers(group.id);
 
-    // Primero cargar permisos del grupo, después los tickets
+
     this.groupsSvc.getMyGroupPermissions(group.id).subscribe({
       next: (permissions) => {
         this.groupsSvc.updateGroupPermissionsCache(group.id, permissions);
@@ -504,7 +494,7 @@ export class GroupDashboardPageComponent implements OnInit {
   loadTickets(): void {
     if (!this.selectedGroup) return;
     
-    // Verificar permiso de ver tickets en el grupo
+   
     if (!this.canViewTickets) {
       this.errorMsg.set('No tienes permisos para ver tickets en este grupo');
       this.tickets.set([]);
@@ -519,7 +509,7 @@ export class GroupDashboardPageComponent implements OnInit {
       next: ts => {
         this.tickets.set(ts);
         this.loading.set(false);
-        // Refrescar el ticket del modal si está abierto
+        
         if (this.selectedTicket) {
           const updated = ts.find(t => t.id === this.selectedTicket?.id);
           if (updated) this.selectedTicket = updated;
@@ -533,7 +523,6 @@ export class GroupDashboardPageComponent implements OnInit {
     });
   }
 
-  // ── Modal: abrir / cerrar ────────────────────────────────────────────────
   openDetailDialog(ticket: Ticket): void {
     this.selectedTicket  = ticket;
     this.dialogMode      = 'view';
@@ -558,8 +547,8 @@ export class GroupDashboardPageComponent implements OnInit {
     this.editForm.reset({
       title:       t.titulo,
       description: t.descripcion || '',
-      status_id:   t.estados.codigo,      // codigo, no UUID
-      priority_id: t.prioridades.codigo,  // codigo, no UUID
+      status_id:   t.estados.codigo,      
+      priority_id: t.prioridades.codigo,  
       assignee_id: t.asignado?.id || '',
       dueDate:     t.fecha_final ? t.fecha_final.substring(0, 10) : ''
     });
@@ -587,7 +576,7 @@ export class GroupDashboardPageComponent implements OnInit {
   onInlineStatusChange(newStatus: string): void {
     if (!this.selectedTicket) return;
     const ticketId = this.selectedTicket.id;
-    // Actualización optimista en el kanban y en el modal
+   
     this.tickets.update(ts =>
       ts.map(t => t.id === ticketId
         ? { ...t, estados: { ...t.estados, codigo: newStatus } }
@@ -614,7 +603,7 @@ export class GroupDashboardPageComponent implements OnInit {
     });
   }
 
-  // ── Drag & Drop Kanban ───────────────────────────────────────────────────
+
   draggedTicketId:  string | null = null;
   dropTargetStatus: string | null = null;
   isDragging: boolean = false;
@@ -649,21 +638,21 @@ export class GroupDashboardPageComponent implements OnInit {
     if (this.draggedTicketId) {
       const ticket = this.tickets().find(t => t.id === this.draggedTicketId);
       if (ticket && ticket.estados?.codigo !== targetCodigo) {
-        // Verificar permisos antes de mover
+       
         if (!this.canMoveTicket(ticket)) {
-          // No tiene permisos para mover este ticket
+         
           this.draggedTicketId = null;
           this.dropTargetStatus = null;
           return;
         }
-        // Actualización optimista: mover la tarjeta de inmediato sin recargar
+        
         this.tickets.update(ts =>
           ts.map(t => t.id === ticket.id
             ? { ...t, estados: { ...t.estados, codigo: targetCodigo } }
             : t
           )
         );
-        // Sincronizar con el backend en segundo plano
+       
         this.ticketsSvc.updateStatus(ticket.id, targetCodigo).subscribe({
           error: () => this.loadTickets()
         });
@@ -679,12 +668,11 @@ export class GroupDashboardPageComponent implements OnInit {
     this.dropTargetStatus = null;
   }
 
-  // Manejador de clic que distingue entre clic simple y arrastre
   onTicketClick(ticket: Ticket): void {
-    // Si venimos de un arrastre, ignorar el clic
+   
     if (this.isDragging) return;
     
-    // Pequeño delay para asegurar que no es el inicio de un arrastre
+  
     setTimeout(() => {
       if (!this.isDragging) {
         this.openDetailDialog(ticket);

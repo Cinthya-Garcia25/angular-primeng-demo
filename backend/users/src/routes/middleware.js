@@ -16,15 +16,10 @@ function requireAuth(req, res, next) {
     }
 };
 
-/**
- * Middleware que verifica en tiempo real desde la base de datos si el usuario
- * posee el permiso requerido. No usa los permisos embebidos en el JWT.
- */
 async function resolveEffectivePerms(req) {
     const userId = req.user?.userId ?? req.user?.id;
     if (!userId) return null;
 
-    // Permisos administrativos globales
     const { data, error } = await supabase
         .from('usuarios')
         .select('is_active, permisos_globales')
@@ -47,16 +42,13 @@ async function resolveEffectivePerms(req) {
         groupPerms = member?.permisos ?? [];
     }
 
-    // Combinar permisos administrativos globales + permisos funcionales del grupo
     return [...new Set([...globalPerms, ...groupPerms])];
 }
 
-/** Requiere exactamente un permiso */
 function requirePermission(permission) {
     return requireAnyPermission([permission]);
 }
 
-/** Requiere al menos uno de los permisos del array (OR lógico) */
 function requireAnyPermission(permissions) {
     return async (req, res, next) => {
         const userId = req.user?.userId ?? req.user?.id;
