@@ -10,8 +10,11 @@ const { logRequest, logError } = require('./src/utils/logger');
 const app = Fastify({ logger: true });
 const PORT = process.env.GATEWAY_PORT ?? 3000;
 
-app.register(require('@fastify/cors'), { 
-  origin: 'https://angular-primeng-demo-eqx3ptyd2-2023371019s-projects.vercel.app'
+app.register(require('@fastify/cors'), {
+  origin: [
+    'https://angular-primeng-demo-git-main-2023371019s-projects.vercel.app',
+    'https://angular-primeng-demo-eqx3ptyd2-2023371019s-projects.vercel.app'
+  ]
 });
 app.register(require('@fastify/rate-limit'), rateLimiter);
 
