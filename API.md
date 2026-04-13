@@ -9,11 +9,11 @@ Reemplaza `BASE_URL` con la URL pública del apigateway desplegado.
 
 | Servicio | URL |
 |----------|-----|
-| Frontend | `https://` |
-| API Gateway | `https://` |
-| Users Service | `https://` |
-| Groups Service | `https://` |
-| Tickets Service | `https://` |
+| Frontend | `https://angular-primeng-demo-git-main-2023371019s-projects.vercel.app` |
+| API Gateway | `https://api-gateway-production-7cd8.up.railway.app` |
+| Users Service | `https://users-production-7c6e.up.railway.app` |
+| Groups Service | `https://groups-production.up.railway.app` |
+| Tickets Service | `https://tickets-production-d305.up.railway.app` |
 
 ---
 
