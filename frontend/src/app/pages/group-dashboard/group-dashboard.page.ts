@@ -100,12 +100,8 @@ export class GroupDashboardPageComponent implements OnInit {
 
 
   get canViewTickets(): boolean {
-  
-    if (this.permsSvc.hasPermission('permissions:manage')) {
-      return true;
-    }
-
-    return this.hasGroupPermission('ticket:view');
+    if (this.permsSvc.hasPermission('permissions:manage')) return true;
+    return this.hasGroupPermission('ticket:view') || this.hasGroupPermission('tickets:view');
   }
 
  
@@ -285,11 +281,11 @@ export class GroupDashboardPageComponent implements OnInit {
   );
 
 
-  readonly canViewAllTickets = computed(() =>
-    this.permsSvc.hasAnyPermission([
-      'group:edit', 'group:remove', 'users:view', 'permissions:manage'
-    ])
-  );
+  readonly canViewAllTickets = computed(() => {
+    if (this.permsSvc.hasPermission('permissions:manage')) return true;
+    if (!this.selectedGroup) return false;
+    return this.groupsSvc.hasGroupPermission(this.selectedGroup.id, 'tickets:view');
+  });
 
 
   createDialogVisible = false;
@@ -638,23 +634,31 @@ export class GroupDashboardPageComponent implements OnInit {
     if (this.draggedTicketId) {
       const ticket = this.tickets().find(t => t.id === this.draggedTicketId);
       if (ticket && ticket.estados?.codigo !== targetCodigo) {
-       
+
         if (!this.canMoveTicket(ticket)) {
-         
           this.draggedTicketId = null;
           this.dropTargetStatus = null;
           return;
         }
-        
+
+        const originalCodigo = ticket.estados?.codigo;
+
         this.tickets.update(ts =>
           ts.map(t => t.id === ticket.id
             ? { ...t, estados: { ...t.estados, codigo: targetCodigo } }
             : t
           )
         );
-       
+
         this.ticketsSvc.updateStatus(ticket.id, targetCodigo).subscribe({
-          error: () => this.loadTickets()
+          error: () => {
+            this.tickets.update(ts =>
+              ts.map(t => t.id === ticket.id
+                ? { ...t, estados: { ...t.estados, codigo: originalCodigo } }
+                : t
+              )
+            );
+          }
         });
       }
     }
