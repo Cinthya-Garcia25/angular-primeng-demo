@@ -30,7 +30,7 @@ const ALL_PERMISSIONS: { label: string; value: string; group: string }[] = [
   { label: 'Crear tickets',          value: 'ticket:add',          group: 'Tickets' },
   { label: 'Editar tickets',         value: 'ticket:edit',         group: 'Tickets' },
   { label: 'Cambiar estado',         value: 'ticket:edit:state',   group: 'Tickets' },
-  { label: 'Eliminar tickets',       value: 'ticket:edit:delete',  group: 'Tickets' },
+  { label: 'Eliminar tickets',       value: 'ticket:delete',       group: 'Tickets' },
   { label: 'Gestionar grupos',       value: 'groups:manage',       group: 'Sistema'  },
   { label: 'Gestionar usuarios',     value: 'users:manage',        group: 'Sistema'  },
   { label: 'Gestionar permisos',     value: 'permissions:manage',  group: 'Sistema'  },

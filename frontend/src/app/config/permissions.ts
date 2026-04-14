@@ -9,7 +9,7 @@ export const TicketPermissions = {
     VIEW: 'ticket:view',
     EDIT: 'ticket:edit',
     ADD: 'ticket:add',
-    DELETE: 'ticket:edit:delete',
+    DELETE: 'ticket:delete',
     EDIT_STATE: 'ticket:edit:state'
 };
 

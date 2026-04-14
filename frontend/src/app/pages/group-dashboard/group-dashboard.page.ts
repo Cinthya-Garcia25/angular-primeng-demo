@@ -127,7 +127,7 @@ export class GroupDashboardPageComponent implements OnInit {
 
 
   get canDeleteTickets(): boolean {
-    return this.hasGroupPermission('ticket:edit:delete');
+    return this.hasGroupPermission('ticket:delete');
   }
 
   tickets      = signal<Ticket[]>([]);
@@ -374,7 +374,7 @@ export class GroupDashboardPageComponent implements OnInit {
     return this.isCreator || this.isAssignee ||
            this.permsSvc.hasAnyPermission(['ticket:edit', 'ticket:edit:comment']);
   }
-  canDelete(): boolean { return this.permsSvc.hasPermission('ticket:edit:delete'); }
+  canDelete(): boolean { return this.permsSvc.hasPermission('ticket:delete'); }
 
  
   canMoveTicket(ticket: Ticket): boolean {
