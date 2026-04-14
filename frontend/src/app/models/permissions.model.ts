@@ -16,7 +16,7 @@ export enum Permission {
     TICKETS_EDIT = 'tickets:edit',
     TICKET_ADD = 'ticket:add',
     TICKETS_ADD = 'tickets:add',
-    TICKET_DELETE = 'ticket:edit:delete',
+    TICKET_DELETE = 'ticket:delete',
     TICKET_EDIT_STATE = 'ticket:edit:state',
     TICKET_EDIT_COMMENT = 'ticket:edit:comment',
     TICKET_EDIT_PRIORITY = 'ticket:edit:priority',
