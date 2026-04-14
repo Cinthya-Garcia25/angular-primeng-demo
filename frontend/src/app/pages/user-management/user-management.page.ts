@@ -119,7 +119,7 @@ export class UserManagementPageComponent implements OnInit {
     'user:add': 'Crear usuarios', 'user:edit': 'Editar usuarios',
     'user:remove': 'Eliminar usuarios', 'permissions:manage': 'Gestionar permisos',
     'user:delete': 'Eliminar usuarios',
-    'group:delete': 'Eliminar grupos',
+    'group:delete': 'Eliminar grupos', 'ticket:delete': 'Eliminar tickets',
     'ticket:edit_state': 'Cambiar estado', 'users:manage': 'Administrar usuarios',
   };
 
